@@ -51,7 +51,7 @@ PATTERN="(^|[^A-Za-z0-9_])Input\.(${LEGACY_MEMBERS})\b"
 
 # Strip full-line comments so the rules' own documentation (which mentions
 # these API names) doesn't trip the hook on itself.
-CODE_ONLY=$(echo "$CONTENT" | grep -vE '^[[:space:]]*(//|\*)')
+CODE_ONLY=$(echo "$CONTENT" | grep -vE '^[[:space:]]*(//|\*)' || true)
 
 MATCH=$(echo "$CODE_ONLY" | grep -nE "$PATTERN" | grep -v 'input:ignore' | head -1 || true)
 
