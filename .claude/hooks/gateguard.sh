@@ -5,7 +5,7 @@
 #
 #   Stage 1 (DENY):  Block first Edit/Write on a C# file. Force investigation.
 #   Stage 2 (FORCE): Emit Unity-specific fact demands (callers, GUID refs,
-#                    FormerlySerializedAs plan, instruction quote, asmdef).
+#                    FormerlySerializedAs plan, instruction quote, MVS layer).
 #   Stage 3 (ALLOW): Second attempt on same file proceeds (presumes the agent
 #                    read the deny message and gathered facts).
 #
@@ -95,10 +95,13 @@ if ! grep -qxF "$FILE_PATH" "$FACTS_PASSED_FILE" 2>/dev/null; then
             echo "  1. Name the file(s) and line(s) that will reference this new type." >&2
             echo "  2. Confirm no existing type serves the same purpose." >&2
             echo "     Run: grep -rn 'class ${BASENAME}' Assets/" >&2
-            echo "  3. Identify the asmdef this file belongs to." >&2
-            echo "     Run: find $(dirname "$DIR") -name '*.asmdef' | head -5" >&2
-            echo "  4. If it's a System, confirm its VContainer registration plan." >&2
-            echo "     If it's a MonoBehaviour, confirm the scene/prefab that will host it." >&2
+            echo "  3. State which layer this belongs to (Model / System / View) and" >&2
+            echo "     confirm the filename suffix matches — the architecture validator" >&2
+            echo "     classifies files by suffix, not by content." >&2
+            echo "  4. If it's a System, name the scene bootstrap that will create it" >&2
+            echo "     and where it gets disposed. If it's a View/MonoBehaviour, name" >&2
+            echo "     the bootstrap that calls its Init(...) and the scene/prefab" >&2
+            echo "     that hosts it." >&2
             echo "  5. Quote the user's current instruction verbatim." >&2
         else
             echo "  File: $FILE_PATH" >&2
@@ -135,7 +138,7 @@ check_counterpart() {
 
     for search_dir in "$DIR" "$(dirname "$DIR")"; do
         local candidate
-        candidate=$(find "$search_dir" -name "${counterpart_name}.cs" -maxdepth 3 2>/dev/null | head -1)
+        candidate=$(find "$search_dir" -maxdepth 3 -name "${counterpart_name}.cs" 2>/dev/null | head -1)
         if [ -n "$candidate" ] && [ -f "$candidate" ]; then
             if ! unity_was_read "$candidate"; then
                 echo "  SUGGESTION: Consider reading the ${role} first: ${candidate}" >&2
