@@ -24,7 +24,7 @@ Your default posture is skeptical. Assume every plan has at least one hidden pro
 - **Physics timing** — Is logic in `Update` that should be in `FixedUpdate`, or vice versa? Is `Time.deltaTime` used in `FixedUpdate`?
 - **Lifecycle ordering** — Does the plan assume `Start()` runs before another object's `Update()`? Does it account for `OnEnable` being called before `Start`?
 - **Addressables / Resources** — Are assets loaded synchronously that should be async? Is there a missing `Release()` call?
-- **Scene loading** — Does additive scene loading create duplicate singletons or LifetimeScopes?
+- **Scene loading** — Does additive scene loading create duplicate singletons or duplicate bootstraps?
 
 ### 2. Architecture Concerns
 
@@ -33,7 +33,7 @@ Your default posture is skeptical. Assume every plan has at least one hidden pro
 - **Scaling** — Will this approach work at the target entity count? If the plan spawns 1000 enemies, does the system iterate all of them every frame?
 - **Implicit dependencies** — Does the plan assume objects exist in a scene? Assume a specific load order? Assume another system has already initialized?
 - **Scope creep** — Does the plan do more than what was asked? Flag gold-plating.
-- **VContainer misuse** — Are registrations in the wrong scope? Is `Lifetime.Transient` used for something that should be `Singleton`? Are MonoBehaviours registered without `RegisterComponentInHierarchy`?
+- **Wiring** — Does anything reach for a dependency instead of receiving it? Is a System created outside the bootstrap? Does a View mutate a Model directly?
 
 ### 3. Missing Edge Cases
 
@@ -50,8 +50,8 @@ Your default posture is skeptical. Assume every plan has at least one hidden pro
 - **GC in hot paths** — Will Update/FixedUpdate allocate? String operations, LINQ, `new List<>`, lambda captures, boxing?
 - **Unbounded growth** — Does a collection grow without bounds? Is there a cleanup mechanism?
 - **Physics queries at scale** — `OverlapSphere` with 500 colliders in range? What's the expected cost?
-- **Event spam** — Can a MessagePipe message fire 60 times per second? Should it be throttled or batched?
-- **Coroutine/UniTask leaks** — Are fire-and-forget tasks properly cancelled on destroy?
+- **Event spam** — Can a System event fire 60 times per second? Should it be throttled or batched?
+- **Async leaks** — Does every await take `destroyCancellationToken` (Views) or the System's own CTS token? Is every fire-and-forget wrapped in `catch (OperationCanceledException)`?
 
 ### 5. Simplification Opportunities
 

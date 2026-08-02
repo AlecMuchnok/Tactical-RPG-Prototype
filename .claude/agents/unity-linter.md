@@ -32,8 +32,8 @@ Run through these checks on the target files:
 
 ### Architecture
 - [ ] Classes are `sealed` unless inheritance is explicitly designed
-- [ ] No singletons (use VContainer `Lifetime.Singleton` instead)
-- [ ] No `StartCoroutine` / `IEnumerator` (use UniTask)
+- [ ] No singletons (create it in the scene bootstrap and pass it in via Init)
+- [ ] Prefer `async Awaitable` over `StartCoroutine` / `IEnumerator` for new code
 - [ ] Private fields use `_lowerCamelCase` naming
 - [ ] Explicit access modifiers on everything
 

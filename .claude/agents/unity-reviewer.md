@@ -22,7 +22,7 @@ You are a senior Unity code reviewer. Review code for correctness, performance, 
 - [ ] **File/class mismatch** — MonoBehaviour class name doesn't match file name?
 - [ ] **DOTween cleanup** — tweens killed in `OnDestroy`? Missing `DOTween.Kill(this)`?
 - [ ] **Event leaks** — subscribed in `OnEnable`/`Awake` but not unsubscribed in `OnDisable`/`OnDestroy`?
-- [ ] **Async void** — naked `async void` instead of `async UniTaskVoid` or proper error handling?
+- [ ] **Async void** — naked `async void` instead of `async Awaitable` (Unity 6 supports `async Awaitable Start()`, so there's no case that legitimately needs `async void`)?
 
 ### Performance (Should Fix)
 

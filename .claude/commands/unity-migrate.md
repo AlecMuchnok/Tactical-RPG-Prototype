@@ -53,4 +53,4 @@ For each step:
 - Unity 2022 → Unity 6
 - Built-in → URP
 - Legacy Input → Input System
-- Coroutines → UniTask
+- Coroutines → `async Awaitable` (Unity 6 built-in)

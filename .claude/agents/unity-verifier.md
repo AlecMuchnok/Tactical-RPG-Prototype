@@ -37,7 +37,7 @@ Apply the unity-reviewer checklist against each changed file:
 - `GetComponent<T>()` / `Camera.main` / `FindObjectOfType` in Update/FixedUpdate/LateUpdate → cache in Awake
 - Missing `#if UNITY_EDITOR` guard around `UnityEditor` usage in runtime code
 - `new WaitForSeconds()` in Update → cache as field
-- `async void` → `async UniTaskVoid`
+- `async void` → `async Awaitable`
 - `SendMessage` / `BroadcastMessage` → flag for replacement with events
 
 **Requires Human Judgment** (report but don't fix):

@@ -58,7 +58,7 @@ Identify every existing system the feature touches:
 2. For each system, clarify:
    - **Data flow direction** — does the new feature read, write, or both?
    - **Ownership** — who owns the Model? Which System mutates it?
-   - **Message dependencies** — what MessagePipe messages does it publish/subscribe?
+   - **Event dependencies** — what events does this System raise, and which Systems/Views subscribe?
 3. **Identify new dependencies** — any new packages, services, or assets needed?
 4. **Assembly placement** — which assembly definition should new code live in?
 
@@ -109,9 +109,9 @@ After all phases are complete, generate a comprehensive document:
 | [edge case] | [what should happen] |
 
 ### Integration Points
-| System | Direction | Messages |
+| System | Direction | Events |
 |--------|-----------|----------|
-| [system] | read/write/both | [MessagePipe messages] |
+| [system] | read/write/both | [events raised / subscribed] |
 
 ### Assembly Placement
 - New scripts go in: `[assembly name]`
