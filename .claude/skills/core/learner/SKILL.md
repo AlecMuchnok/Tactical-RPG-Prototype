@@ -34,14 +34,14 @@ Is this specific to THIS project's architecture, conventions, or quirks?
 - **Fails:** "UniTask is better than coroutines" (generic advice)
 - **Fails:** "VContainer uses constructor injection" (library documentation)
 - **Passes:** "The InventorySystem expects item IDs to be registered in ItemRegistry before any InventoryModel is created — initialization order matters"
-- **Passes:** "Scene transitions must go through SceneSystem.LoadAsync, not SceneManager directly, because SceneSystem handles LifetimeScope cleanup"
+- **Passes:** "Scene transitions must go through SceneSystem.LoadAsync, not SceneManager directly, because SceneSystem handles bootstrap cleanup"
 
 ### Gate 3: Required Real Effort
 Did this take actual debugging effort to discover?
 
 - **Fails:** Missing semicolon, typo in field name, wrong import
 - **Fails:** Obvious null reference from unassigned SerializeField
-- **Passes:** Subtle race condition between async scene load and VContainer injection
+- **Passes:** Subtle race condition between async scene load and bootstrap Init(...) wiring
 - **Passes:** Serialization depth limit causing data truncation in nested inventory structure
 
 ## Classification

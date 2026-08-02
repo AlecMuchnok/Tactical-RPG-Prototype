@@ -113,7 +113,7 @@ echo "$TAG_STATS" | jq -c '.[]' 2>/dev/null | while read -r row; do
 
     case "$TAG" in
         view)    TRIG="before editing *View.cs" ; ACTION="expect quality-gate warnings; confirm the Model is read first and no Update-loop allocations are introduced" ; DOMAIN="mvs" ;;
-        system)  TRIG="before editing *System.cs" ; ACTION="confirm VContainer registration is consistent; System owns Model mutations, not Views" ; DOMAIN="mvs" ;;
+        system)  TRIG="before editing *System.cs" ; ACTION="confirm it's created in the scene bootstrap and disposed there; System owns Model mutations, not Views" ; DOMAIN="mvs" ;;
         model)   TRIG="before editing *Model.cs" ; ACTION="keep Models pure C#; no MonoBehaviour, no Unity API references" ; DOMAIN="mvs" ;;
         sobject) TRIG="before editing a ScriptableObject type" ; ACTION="SO holds static config; runtime mutable state belongs in a Model" ; DOMAIN="data" ;;
         mono)    TRIG="before editing a MonoBehaviour Controller/Manager/Handler" ; ACTION="watch for GetComponent/Camera.main/allocations in Update loops" ; DOMAIN="perf" ;;
