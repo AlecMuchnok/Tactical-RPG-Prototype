@@ -59,19 +59,19 @@ while IFS= read -r FILE; do
         FILE_ISSUES="${FILE_ISSUES}    Safety: Null-conditional (?.) on Unity object (bypasses destroyed-object detection)\n"
     fi
 
-    # Check for coroutine usage (should be UniTask)
+    # Check for coroutine usage (non-preferred — Awaitable is the default now)
     if grep -qE '(StartCoroutine|IEnumerator|yield\s+return)' "$FILE" 2>/dev/null; then
         case "$FILE" in
             *Test*|*test*|*Editor*) ;; # Skip test/editor files
             *)
-                FILE_ISSUES="${FILE_ISSUES}    Convention: Coroutine usage detected — prefer UniTask\n"
+                FILE_ISSUES="${FILE_ISSUES}    Convention: Coroutine usage detected — prefer async Awaitable (Awaitable.NextFrameAsync / WaitForSecondsAsync)\n"
                 ;;
         esac
     fi
 
     # Check for singleton pattern
     if grep -qE 'static\s+\w+\s+[Ii]nstance\b' "$FILE" 2>/dev/null; then
-        FILE_ISSUES="${FILE_ISSUES}    Architecture: Singleton pattern detected — use VContainer instead\n"
+        FILE_ISSUES="${FILE_ISSUES}    Architecture: Singleton pattern detected — create it in the scene bootstrap and pass it in via Init(...)\n"
     fi
 
     # Check for public fields (should be [SerializeField] private)

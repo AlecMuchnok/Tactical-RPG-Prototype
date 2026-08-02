@@ -89,13 +89,13 @@ fi
 
 # --- Check for new WaitForSeconds in methods (likely in Update or repeated calls) ---
 if echo "$CONTENT" | grep -qE 'new\s+WaitForSeconds\s*\('; then
-    WARNINGS="${WARNINGS}  - new WaitForSeconds() allocates each call. Cache as a field or use UniTask.Delay.\n"
+    WARNINGS="${WARNINGS}  - new WaitForSeconds() allocates each call. Prefer await Awaitable.WaitForSecondsAsync(n, token) over a coroutine.\n"
     unity_track_warning "quality-gate" "new WaitForSeconds allocation"
 fi
 
 # --- Check for SendMessage/BroadcastMessage ---
 if echo "$CONTENT" | grep -qE '(SendMessage|BroadcastMessage)\s*\('; then
-    WARNINGS="${WARNINGS}  - SendMessage/BroadcastMessage uses reflection. Use direct references or MessagePipe.\n"
+    WARNINGS="${WARNINGS}  - SendMessage/BroadcastMessage uses reflection. Use a direct reference, or a C# event on the publishing System.\n"
     unity_track_warning "quality-gate" "SendMessage/BroadcastMessage reflection call"
 fi
 

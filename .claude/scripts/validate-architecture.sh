@@ -40,8 +40,8 @@ ${BOLD}What it checks:${RESET}
   1. Models don't reference Views, Systems, or MonoBehaviour
   2. Systems don't reference Views or MonoBehaviour
   3. No singleton patterns (static Instance, FindObjectOfType)
-  4. No coroutines (StartCoroutine, IEnumerator, yield return)
-  5. Correct injection patterns (method for MonoBehaviour, constructor for Systems)
+  4. Coroutine usage (prefer async Awaitable)
+  5. Views don't mutate Models or construct Systems
 
 ${BOLD}Note:${RESET}
   This is heuristic-based (grep). It may produce false positives.
@@ -167,25 +167,26 @@ ALL_CS=$(find "$SCAN_PATH" -name "*.cs" -not -path "*/Editor/*" -not -path "*/Te
 while IFS= read -r FILE; do
     [[ -z "$FILE" ]] && continue
 
-    # Skip LifetimeScope files (they are the DI containers)
-    case "$FILE" in *LifetimeScope* | *Scope*) continue ;; esac
+    # Skip Bootstrap files (they are the one place allowed to construct Systems
+    # and reference broadly — that's their job)
+    case "$FILE" in *Bootstrap*) continue ;; esac
 
     # Static Instance pattern
     LINE_NUM=$(grep -nE 'static\s+\w+\s+Instance\b' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
     if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" "Singleton pattern detected (static Instance) — use VContainer registration instead"
+        report_issue "WARNING" "$FILE" "$LINE_NUM" "Singleton pattern detected (static Instance) — create it in the scene bootstrap and pass it in"
     fi
 
     # FindObjectOfType outside of tests
     LINE_NUM=$(grep -nE 'FindObjectOfType|FindObjectsOfType|FindFirstObjectByType' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
     if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" "FindObjectOfType usage — use VContainer injection instead"
+        report_issue "WARNING" "$FILE" "$LINE_NUM" "FindObjectOfType usage — pass the reference in via the bootstrap's Init(...) call"
     fi
 
-    # DontDestroyOnLoad outside LifetimeScope
+    # DontDestroyOnLoad outside a bootstrap
     LINE_NUM=$(grep -nE 'DontDestroyOnLoad' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
     if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" "DontDestroyOnLoad — prefer bootstrapper scene with RootLifetimeScope"
+        report_issue "WARNING" "$FILE" "$LINE_NUM" "DontDestroyOnLoad — prefer a bootstrap scene with an AppBootstrap"
     fi
 done <<< "$ALL_CS"
 echo ""
@@ -200,41 +201,50 @@ while IFS= read -r FILE; do
 
     LINE_NUM=$(grep -nE 'StartCoroutine|StopCoroutine|StopAllCoroutines' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
     if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" "Coroutine usage — use UniTask for all async work"
+        report_issue "WARNING" "$FILE" "$LINE_NUM" "Coroutine usage — prefer async Awaitable for new code"
     fi
 
     LINE_NUM=$(grep -nE 'IEnumerator\b.*\(' "$FILE" | grep -v 'architecture:ignore' | grep -v '^\s*//' | head -1 | cut -d: -f1 || true)
     if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" "IEnumerator method (likely coroutine) — use async UniTask instead"
+        report_issue "WARNING" "$FILE" "$LINE_NUM" "IEnumerator method (likely coroutine) — prefer async Awaitable"
     fi
 
     LINE_NUM=$(grep -nE 'yield\s+return' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
     if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" "yield return (coroutine) — use UniTask.Delay, UniTask.WaitUntil, etc."
+        report_issue "WARNING" "$FILE" "$LINE_NUM" "yield return (coroutine) — prefer await Awaitable.NextFrameAsync(token) / WaitForSecondsAsync(s, token)"
     fi
 done <<< "$ALL_CS"
 echo ""
 
 # ---------------------------------------------------------------------------
-# Check 5: Injection patterns
+# Check 5: View -> Model write direction
+# (convention-dependent: assumes a View's Model field is named `_model`, per
+# the architecture.md Views example. A View naming its field differently won't
+# be caught by this heuristic.)
 # ---------------------------------------------------------------------------
-echo "${BOLD}${CYAN}[5/5] Checking injection patterns...${RESET}"
+echo "${BOLD}${CYAN}[5/5] Checking View → Model write direction...${RESET}"
+
+VIEW_FILES=$(find "$SCAN_PATH" -name "*View.cs" -not -path "*/Editor/*" -not -path "*/Tests/*" 2>/dev/null || true)
 
 while IFS= read -r FILE; do
     [[ -z "$FILE" ]] && continue
 
-    # Check MonoBehaviours using [Inject] on fields (should use Construct method)
-    if grep -qE ':\s*MonoBehaviour' "$FILE"; then
-        LINE_NUM=$(grep -nE '^\s*\[Inject\]\s*$' "$FILE" | head -1 | cut -d: -f1 || true)
-        if [[ -n "$LINE_NUM" ]]; then
-            # Check if the next line is a field (not a method)
-            NEXT_LINE=$(sed -n "$((LINE_NUM + 1))p" "$FILE" 2>/dev/null || true)
-            if echo "$NEXT_LINE" | grep -qE '^\s*(private|public|protected|internal)\s+\w+\s+\w+\s*;'; then
-                report_issue "WARNING" "$FILE" "$LINE_NUM" "Field injection on MonoBehaviour — use [Inject] method injection (Construct pattern)"
-            fi
-        fi
+    # A View calling _model.SetXxx(...) means logic leaked out of a System.
+    LINE_NUM=$(grep -nE '_model\.Set[A-Z]\w*\s*\(' "$FILE" \
+        | grep -v 'architecture:ignore' | grep -v '^\s*//' | head -1 | cut -d: -f1 || true)
+    if [[ -n "$LINE_NUM" ]]; then
+        report_issue "WARNING" "$FILE" "$LINE_NUM" \
+            "View mutates a Model directly — call a System instead; only Systems mutate Models"
     fi
-done <<< "$ALL_CS"
+
+    # A View that news up a System is doing the bootstrap's job.
+    LINE_NUM=$(grep -nE 'new\s+\w+System\s*\(' "$FILE" \
+        | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
+    if [[ -n "$LINE_NUM" ]]; then
+        report_issue "WARNING" "$FILE" "$LINE_NUM" \
+            "View constructs a System — only the scene bootstrap creates Systems"
+    fi
+done <<< "$VIEW_FILES"
 echo ""
 
 # ---------------------------------------------------------------------------

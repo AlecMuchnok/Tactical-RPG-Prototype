@@ -31,10 +31,14 @@ if [ -z "$CONTENT" ]; then
     exit 0
 fi
 
-# Platform-specific defines to check
+# Platform-specific defines to check. Kept intentionally broad (includes mobile
+# defines) so that if UNITY_ANDROID/UNITY_IOS ever show up in this desktop/console
+# project, they still get flagged.
 PLATFORM_DEFINES="UNITY_ANDROID|UNITY_IOS|UNITY_WEBGL|UNITY_STANDALONE_WIN|UNITY_STANDALONE_OSX|UNITY_STANDALONE_LINUX|UNITY_PS4|UNITY_PS5|UNITY_XBOXONE|UNITY_GAMECORE|UNITY_SWITCH"
 
 # Check for platform defines without else
+# NOTE: heuristic — #else/#elif count is file-wide, not per-#if block, so a file
+# with one #if...#else pair plus one un-else'd #if can balance out and stay silent.
 if echo "$CONTENT" | grep -qE "#if\s+($PLATFORM_DEFINES)"; then
     # Count #if UNITY_PLATFORM and #else occurrences
     IF_COUNT=$(echo "$CONTENT" | grep -cE "#if\s+($PLATFORM_DEFINES)" || true)
@@ -50,12 +54,12 @@ if echo "$CONTENT" | grep -qE "#if\s+($PLATFORM_DEFINES)"; then
         echo "  Code inside platform defines is silently excluded on other platforms." >&2
         echo "  Consider adding #else with a fallback or #error for unsupported platforms:" >&2
         echo "" >&2
-        echo "    #if UNITY_ANDROID" >&2
-        echo "        // Android implementation" >&2
-        echo "    #elif UNITY_IOS" >&2
-        echo "        // iOS implementation" >&2
+        echo "    #if UNITY_GAMECORE || UNITY_PS5 || UNITY_SWITCH" >&2
+        echo "        // Console implementation" >&2
+        echo "    #elif UNITY_STANDALONE" >&2
+        echo "        // Desktop implementation" >&2
         echo "    #else" >&2
-        echo "        // Default / other platforms" >&2
+        echo "        // Editor / anything else — always provide this branch" >&2
         echo "    #endif" >&2
     fi
 fi
