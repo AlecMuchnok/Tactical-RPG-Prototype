@@ -22,21 +22,36 @@ private void OnValidate()
 
 ## Platform Defines
 
+This game ships to **desktop and console**. It does not ship to mobile — `UNITY_ANDROID` and `UNITY_IOS` should never appear in this codebase.
+
+| Define | True when |
+|---|---|
+| `UNITY_EDITOR` | Running in the Editor, on any build target |
+| `UNITY_STANDALONE` | Any desktop build (Win / macOS / Linux) |
+| `UNITY_STANDALONE_WIN` / `_OSX` / `_LINUX` | That specific desktop target |
+| `UNITY_GAMECORE` | Xbox (Game Core) |
+| `UNITY_PS5` | PlayStation 5 |
+| `UNITY_SWITCH` | Nintendo Switch |
+
+`UNITY_EDITOR` is defined *in addition to* the active build target's define — code inside `#if UNITY_STANDALONE_WIN` also compiles in the Editor when the target is Windows.
+
 ```csharp
-// GOOD — always provide fallback
-#if UNITY_ANDROID
-    string dataPath = Application.persistentDataPath;
-#elif UNITY_IOS
-    string dataPath = Application.persistentDataPath;
+// GOOD — every branch is covered, so the code compiles on every target
+#if UNITY_GAMECORE || UNITY_PS5 || UNITY_SWITCH
+    ShowGamepadPrompts();
+#elif UNITY_STANDALONE
+    ShowKeyboardMousePrompts();
 #else
-    string dataPath = Application.dataPath;
+    ShowKeyboardMousePrompts();   // Editor and anything else
 #endif
 
-// BAD — code silently excluded on other platforms
-#if UNITY_ANDROID
-    SetupMobileControls();
+// BAD — silently compiles to nothing on console. No error, no warning, no prompts.
+#if UNITY_STANDALONE
+    ShowKeyboardMousePrompts();
 #endif
 ```
+
+Console-specific code (save-data APIs, achievements, certification) belongs behind these defines with a desktop fallback, not sprinkled through gameplay Systems.
 
 ## The `?.` Operator Trap
 
@@ -78,39 +93,42 @@ Unity API is main-thread only. Background threads cannot:
 - Access `Time`, `Input`, `Physics`
 
 ```csharp
-// Return to main thread with UniTask:
-await UniTask.SwitchToMainThread();
+// Return to main thread with Awaitable:
+await Awaitable.MainThreadAsync();
 
-// Or with SynchronizationContext:
-SynchronizationContext.Current.Post(_ => { /* Unity API here */ }, null);
+// The reverse direction, for CPU-heavy work that shouldn't block the main thread:
+await Awaitable.BackgroundThreadAsync();
+
+// SynchronizationContext.Current.Post also works, but you should not need it —
+// Awaitable.MainThreadAsync() covers this case.
 ```
 
-## No Coroutines — Use UniTask
+## Async — Use Awaitable
 
-Do not use `StartCoroutine` / `IEnumerator` / `yield return`. Use UniTask for all async work.
+`StartCoroutine` / `IEnumerator` / `yield return` are **non-preferred** for new code. Use `UnityEngine.Awaitable` (built into Unity 6 — no package needed) instead.
 
-Coroutine problems that UniTask solves:
+Reasons to prefer `Awaitable`:
 - Coroutines stop silently when `gameObject.SetActive(false)` and don't resume
 - Coroutines have no cancellation, error handling, or return values
 - Coroutines allocate on the heap
 
 ```csharp
-// BAD — coroutine
+// Non-preferred — coroutine
 private IEnumerator WaitAndDo()
 {
     yield return new WaitForSeconds(1f);
     DoSomething();
 }
 
-// GOOD — UniTask
-private async UniTask WaitAndDoAsync(CancellationToken token)
+// Preferred — Awaitable
+private async Awaitable WaitAndDoAsync(CancellationToken token)
 {
-    await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: token);
+    await Awaitable.WaitForSecondsAsync(1f, token);
     DoSomething();
 }
 ```
 
-Always pass `CancellationToken`. In Views: `this.GetCancellationTokenOnDestroy()`. In Systems: own a `CancellationTokenSource` and cancel in `Dispose()`.
+Always pass a `CancellationToken`. In MonoBehaviours: `destroyCancellationToken` (built in — no extension method, no manual `CancellationTokenSource`). In Systems: own a `CancellationTokenSource` and cancel it in `Dispose()`. See `architecture.md`'s Async section for the full rules, including why `async void` is banned.
 
 ## DontDestroyOnLoad
 
@@ -143,7 +161,7 @@ BootstrapScene (loads once, contains persistent services)
 
 ## Input System (NON-NEGOTIABLE)
 
-The New Input System package is **mandatory**. Legacy `Input.GetKey`/`Input.GetAxis` is **BLOCKED** by hooks.
+The New Input System package is **mandatory**. Legacy `Input.GetKey` / `Input.GetAxis` / `Input.GetButton` / `Input.GetMouseButton` is **BLOCKED** by the `block-legacy-input` PreToolUse hook.
 
 ### Generated C# Class (Preferred Approach)
 
@@ -165,8 +183,7 @@ public sealed class InputView : MonoBehaviour
         _controls = new PlayerControls();
     }
 
-    [Inject]
-    public void Construct(PlayerSystem playerSystem)
+    public void Init(PlayerSystem playerSystem)
     {
         _playerSystem = playerSystem;
     }
@@ -207,7 +224,7 @@ public sealed class InputView : MonoBehaviour
 | **Subscribe in OnEnable, unsubscribe in OnDisable** | Every `+=` must have a matching `-=` in OnDisable |
 | **Read continuous input in Update** | FixedUpdate runs at different rate — input can be missed |
 | **Cache input, apply in FixedUpdate** | Physics forces use cached values, not raw reads |
-| **Never use legacy Input API** | `Input.GetKey`, `Input.GetAxis`, `Input.GetButton` are BLOCKED |
+| **Never use legacy Input API** | Blocked by the `block-legacy-input` hook. Use `Mouse.current` / `Keyboard.current` / `Gamepad.current`, or a generated `PlayerControls` class |
 | **InputView is a View** | Pure thin adapter — reads input, calls Systems. Zero logic |
 | **One InputView per scene** | Centralized input reading prevents duplicate subscriptions |
 

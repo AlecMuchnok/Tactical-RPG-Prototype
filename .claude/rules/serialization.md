@@ -92,9 +92,9 @@ public class MyData : MonoBehaviour, ISerializationCallbackReceiver
     public void OnAfterDeserialize()
     {
         _lookup.Clear();
-        for (int i = 0; i < _keys.Count; i++)
+        for (int keyIndex = 0; keyIndex < _keys.Count; keyIndex++)
         {
-            _lookup[_keys[i]] = _values[i];
+            _lookup[_keys[keyIndex]] = _values[keyIndex];
         }
     }
 }

@@ -7,7 +7,7 @@
 - Public fields use `lowerCamelCase`: `moveSpeed`, `health`
 - Properties (public and private) use `UpperCamelCase`: `MoveSpeed`, `Health`
 - `static readonly` fields use `UpperCamelCase`: `JumpHash`, `DefaultColor`
-- `const` fields use `UPPER_SNAKE_CASE`: `MAX_HEALTH`, `MAX_PLAYER_COUNT`
+- `const` fields use `UpperCamelCase`: `MaxHealth`, `MaxPlayerCount` (matches the `static readonly` rule above and .NET convention — one casing for all compile-time constants)
 - `readonly` for fields set only in constructor or Awake
 
 ```csharp
@@ -16,7 +16,7 @@
 
 private Rigidbody _rigidbody;
 private static readonly int JumpHash = Animator.StringToHash("Jump");
-private const int MAX_JUMP_COUNT = 3;
+private const int MaxJumpCount = 3;
 ```
 
 ## Encapsulation (NON-NEGOTIABLE)
@@ -26,7 +26,7 @@ private const int MAX_JUMP_COUNT = 3;
 - Fields: `private` by default. Only use `[SerializeField] private` if the field MUST be configured in the Inspector. Do NOT add `[SerializeField]` speculatively — only when a designer/developer actually needs to tweak that value in the Inspector.
 - Methods: `private` by default. Only make `public` if another class actually calls it. "Might be useful later" is NOT a reason.
 - Properties: `private` by default. Expose a public getter only when another class reads it. Expose a public setter only when another class writes it.
-- Classes/structs: `internal` by default when inside an assembly. Only `public` when consumed by other assemblies.
+- Classes/structs: this project has no `.asmdef` files, so everything is one assembly and `internal` is indistinguishable from `public` — don't reach for it. Use `sealed` instead (see *Types and Naming* below). Revisit this if assembly definitions are added later.
 - Nested types: `private` unless external access is required.
 
 **The test:** Before making anything non-private, identify the caller. If you can't name a concrete caller in the current codebase, it stays `private`. Agents must not generate speculative public API surface.

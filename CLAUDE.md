@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Isometric, grid-based tactical RPG (Fire Emblem / XCOM-style turn-based tactics), targeting PC/desktop first.
+Isometric, grid-based tactical RPG (Fire Emblem / XCOM-style turn-based tactics), targeting PC/desktop and console.
 
 Current milestone: prototyping a 10x10 isometric grid with a single player unit that can be selected and glide-moved along an orthogonal path.
 
@@ -20,7 +20,7 @@ Current milestone: prototyping a 10x10 isometric grid with a single player unit 
 - Unity Test Framework
 - Unity MCP for Unity (`com.coplaydev.unity-mcp`) — enables MCP-driven Editor automation
 
-**Not yet installed:** VContainer, MessagePipe, and UniTask. The architecture rules ([architecture.md](.claude/rules/architecture.md)) require these for DI, messaging, and async — add them before building new systems that need injection, cross-system messaging, or async/await.
+**No third-party frameworks.** This project deliberately uses no DI container, no message bus, and no async library. Dependency wiring is a per-scene bootstrap MonoBehaviour, cross-system communication is plain C# events, and async is `UnityEngine.Awaitable`. See [architecture.md](.claude/rules/architecture.md). Do not add VContainer / Zenject / MessagePipe / UniTask / R3 without an explicit decision to change this.
 
 ### Assembly Definitions
 
@@ -36,11 +36,11 @@ No `.asmdef` files exist yet — the project is a single default assembly. Add a
 
 Detailed, enforced rules live in `.claude/rules/`. Read the relevant file before writing code in that area:
 
-- [architecture.md](.claude/rules/architecture.md) — Model-View-System pattern, VContainer DI, MessagePipe messaging, UniTask async, no singletons/service locators
+- [architecture.md](.claude/rules/architecture.md) — Model-View-System pattern, composition-root wiring, C# events, `Awaitable` async, no singletons/service locators
 - [csharp-unity.md](.claude/rules/csharp-unity.md) — naming conventions, encapsulation (private-by-default), file/type structure ordering
 - [performance.md](.claude/rules/performance.md) — zero-allocation hot paths, draw call budget, atlasing/batching, UI canvas splitting
 - [serialization.md](.claude/rules/serialization.md) — `[FormerlySerializedAs]` on renames, Unity's `== null` vs `is null`, `[SerializeReference]` for polymorphism
-- [unity-specifics.md](.claude/rules/unity-specifics.md) — New Input System usage, `#if UNITY_EDITOR` guards, lifecycle order, no coroutines (UniTask only)
+- [unity-specifics.md](.claude/rules/unity-specifics.md) — New Input System usage, `#if UNITY_EDITOR` guards, lifecycle order, `Awaitable` over coroutines, desktop/console platform defines
 
 ---
 

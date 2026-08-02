@@ -38,7 +38,7 @@ Cache these in Awake — NEVER call in Update:
 | Allocates | Use Instead |
 |-----------|------------|
 | `new List<T>()` in Update | Pre-allocate, reuse with `.Clear()` |
-| `new WaitForSeconds(n)` | Cache as field: `WaitForSeconds _wait = new(0.5f)` |
+| `new WaitForSeconds(n)` in a coroutine | `await Awaitable.WaitForSecondsAsync(n, token)` — no per-call allocation |
 | `string + string` | `StringBuilder` or `string.Format` |
 | `foreach` on non-List | `for` loop with index |
 | `LINQ` (`.Where`, `.Select`, `.Any`) | Manual loops |
@@ -63,6 +63,16 @@ Cache these in Awake — NEVER call in Update:
 
 **Draw call budget matters as much as GC.** The architect MUST plan rendering optimization from the start — not as an afterthought.
 
+### Frame Budget (desktop + console)
+
+| Target | Resolution | Frame time |
+|---|---|---|
+| Desktop minimum spec | 1080p | 16.6 ms (60 FPS) |
+| Desktop recommended | 1440p+ | 8.3 ms (120 FPS) |
+| Console | 1080p / 1440p | 16.6 ms locked (60 FPS) |
+
+A locked frame rate matters more than a high one. A turn-based tactics game has no excuse for a dropped frame — there is no physics simulation and no streaming pressure. Frame time is the budget; measure it in the Profiler, not by eyeballing the FPS counter.
+
 ### The Draw Call Rule
 
 Every unique Material + Mesh combination = 1 draw call. Always aim for the **lowest draw call count possible** — batch aggressively, atlas everything, share materials. There is no "good enough" number; fewer is always better.
@@ -80,7 +90,7 @@ SpriteAtlas "CardAtlas" containing all 52 cards + backs + UI elements
 **Rules:**
 - **All 2D sprites MUST use Sprite Atlases** — create atlases in `Assets/Art/Atlases/`
 - Group by rendering layer: one atlas per logical group (cards, UI icons, environment tiles)
-- Max atlas size: 2048x2048 (mobile) or 4096x4096 (desktop)
+- Max atlas size: 4096x4096. Pick the smallest power of two the sprites actually fit in — a half-empty 4096 atlas wastes 64MB of VRAM for nothing.
 - Enable "Tight Packing" and "Allow Rotation" for optimal packing
 - The architect MUST specify atlas grouping in the TDD
 
@@ -125,7 +135,7 @@ public void SetColor(Color color)
 - **Sprites**: Use Sprite Atlas + same material = automatic batching
 - **3D**: Enable GPU Instancing on materials for repeated meshes (trees, props, enemies)
 - **Static objects**: Mark as "Batching Static" in inspector for static batching
-- **Dynamic objects**: Keep same material + mesh for dynamic batching (< 300 vertices)
+- **Dynamic batching**: leave it off. It's a low-end-mobile optimization that costs CPU to merge meshes on the fly, and URP's SRP Batcher supersedes it. For 2D, sprites batch by atlas + material automatically — that's the lever that matters here.
 - The architect MUST specify batching strategy in the TDD
 
 ### UI Canvas Optimization
@@ -147,7 +157,7 @@ Canvas_Popups (dynamic elements)
 - **Split Canvases by update frequency** — a single changing element rebuilds the ENTIRE Canvas mesh
 - Static UI (backgrounds, labels that never change) on a separate Canvas
 - Frequently updating UI (health bars, timers, scores) on their own Canvas
-- Disable `Raycast Target` on elements that don't need click/touch detection
+- Disable `Raycast Target` on elements that don't need pointer interaction. This matters more on console than desktop: gamepad navigation uses explicit selectable links, so most UI graphics should have raycasting off entirely.
 - Use `CanvasGroup.alpha = 0` + `blocksRaycasts = false` instead of `SetActive(false)` to avoid rebuild on re-enable
 - Pool UI elements (popups, list items) — don't Instantiate/Destroy
 
@@ -174,7 +184,7 @@ The TDD MUST include a **Rendering Strategy** section covering:
 5. UI Canvas split plan
 6. Any known overdraw risks and mitigation
 
-This is not optional. A game that runs at 10 FPS because of 500 draw calls is worse than a game with unoptimized C# that still hits 60 FPS.
+This is not optional. A 2D tactics board should issue draw calls in the low tens — one per atlas, plus UI. Hundreds means the atlasing plan failed. A game that stutters on a 100-unit battle because every sprite is its own texture is worse than a game with unoptimized C# that holds a locked frame rate.
 
 ### Developer Action Items (MANDATORY)
 
@@ -196,7 +206,7 @@ The game requires sprite atlases for optimal draw call count. Please create thes
 2. Name it "CardAtlas", save to Assets/Art/Atlases/
 3. In the Inspector:
    - Add folder "Assets/Art/Cards" to "Objects for Packing"
-   - Set "Max Texture Size" to 2048
+   - Set "Max Texture Size" to 4096
    - Enable "Tight Packing"
    - Enable "Allow Rotation"
    - Click "Pack Preview" to verify all sprites fit
