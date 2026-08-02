@@ -63,14 +63,14 @@ Not-tested: none
 
 ### Cross-system refactor
 ```
-Migrate score tracking from static class to VContainer
+Migrate score tracking from static class to bootstrap-created System
 
-ScoreManager was a static singleton — replaced with ScoreSystem
-registered in GameLifetimeScope. All 4 consumers updated to
-use constructor injection.
+ScoreManager was a static singleton — replaced with ScoreSystem,
+created in BattleBootstrap.Awake and disposed in OnDestroy. All 4
+consumers updated to receive it via Init(...).
 
 Scope-risk: high
-Constraint: no-singletons — VContainer is the only DI mechanism
+Constraint: no-singletons — the scene bootstrap is the only wiring point
 Rejected: SO-based-score-channel — adds complexity for simple int tracking
 Not-tested: score persistence across scene transitions
 ```

@@ -64,11 +64,10 @@ Run a comprehensive diagnostic check on the everything-claude-unity installation
 | `com.unity.textmeshpro` | `third-party/textmeshpro` |
 | `com.unity.timeline` | — (no skill yet) |
 
-3. Also check for third-party packages in `Assets/`:
-   - `DOTween` → `third-party/dotween`
-   - `UniTask` → `third-party/unitask`
-   - `VContainer` → `third-party/vcontainer`
-   - `Odin` → `third-party/odin-inspector`
+3. This project deliberately doesn't use DOTween, UniTask, VContainer, or Odin
+   (see CLAUDE.md and `architecture.md`) — their skill directories were removed.
+   If `Assets/` ever contains one of these, flag it as a **WARNING** (undocumented
+   dependency), not a missing skill.
 
 4. Report packages without matching skills → **WARNING** (capability gap)
 5. All aligned → **PASS**

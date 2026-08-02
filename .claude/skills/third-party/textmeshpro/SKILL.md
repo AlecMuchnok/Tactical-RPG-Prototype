@@ -1,7 +1,7 @@
 ---
 name: textmeshpro
 description: "TextMeshPro text rendering — font asset creation, material presets, rich text tags, dynamic font fallback, sprite assets in text. Use for all text rendering in Unity."
-globs: ["**/TMP_*.cs", "**/TextMesh*.cs", "**/*Text*.cs", "**/*.asset"]
+globs: ["**/TMP_*.cs", "**/TextMesh*.cs"]
 ---
 
 # TextMeshPro — Advanced Text Rendering for Unity

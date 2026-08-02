@@ -15,7 +15,7 @@ Our static rules in `.claude/rules/` encode *universal* Unity truths (serializat
 
 - This project stores Models in `Runtime/Domain/`, not `Scripts/Models/`.
 - Editing *View.cs reliably triggers quality-gate warnings here because developers hand-roll input handling.
-- VContainer scopes are nested by feature, not by scene.
+- Every scene has exactly one `<Scene>Bootstrap` that creates Models and Systems.
 
 The instinct system captures these project-specific patterns automatically. Universal patterns remain owned by rules.
 
