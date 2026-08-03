@@ -11,6 +11,8 @@ Orchestrate a complete development workflow for: **$ARGUMENTS**
 
 This command runs a 4-phase pipeline: **Clarify → Plan → Execute → Verify**. Each phase requires explicit user confirmation before proceeding to the next.
 
+**Model tier:** Phases 1-2 (Clarify, Plan) and Phase 2b (Critic) are plan-making — run the orchestrating conversation on **Opus** through the end of Phase 2b, since a wrong plan is expensive to unwind. Phase 3 (Execute) delegates to `unity-coder`, which runs on **Sonnet** — implementation against an already-approved plan doesn't need frontier reasoning. If you're driving this command interactively, switch models yourself at the Phase 2b → Phase 3 boundary; `/model` doesn't persist across a command's phases automatically.
+
 ## Phase 0: Sync
 
 Before clarifying requirements, sync with `main` (see `git-workflow.md`):
@@ -61,7 +63,7 @@ Present the plan to the user and wait for approval before executing.
 
 Unless `--no-critic` is specified in the original arguments:
 
-1. **Invoke `unity-critic`** (opus, read-only) with the approved plan
+1. **Invoke `unity-critic`** (Opus, read-only) with the approved plan
 2. The critic will challenge the plan for Unity-specific gotchas, missed edge cases, over-engineering, and performance risks
 3. Present the critic's challenges to the user
 4. Incorporate valid challenges into the plan before executing
@@ -69,10 +71,12 @@ Unless `--no-critic` is specified in the original arguments:
 
 ## Phase 3: Execute
 
+The plan is approved — this is implementation, not judgment calls about approach. If driving interactively on Opus, switch to Sonnet now.
+
 Follow the approved plan:
 
 1. **Create a feature branch** — `git checkout -b feature/<short-description>` (or `fix/`, `chore/` as appropriate). Skip only if already on a non-`main` branch created for this work.
-2. **Route to the appropriate agent(s)** based on the plan
+2. **Route to the appropriate agent(s)** based on the plan — `unity-coder` (Sonnet) for code
 3. **Write C# code** following all rules in `.claude/rules/`
 4. **Set up scene elements** via MCP if needed (`batch_execute` for speed)
 5. **Check console** via `read_console` after each major step for compilation errors
@@ -82,7 +86,7 @@ Report progress at natural milestones (e.g., "Scripts written, setting up scene 
 
 ## Phase 4: Verify
 
-Run the `unity-verifier` agent to perform a verify-fix loop:
+Run the `unity-verifier` agent (Sonnet — mechanical fix-application, same tier as Execute) to perform a verify-fix loop:
 
 1. **Review** all changed files against the unity-reviewer checklist
 2. **Auto-fix** issues that are safe to fix automatically
@@ -139,3 +143,4 @@ Present a complete summary to the user:
 - **Prefer existing patterns** — match the project's established conventions
 - **Minimal viable implementation** — don't overbuild on the first pass
 - **Verify everything** — the verify phase is not optional
+- **Opus plans, Sonnet implements** — planning mistakes are expensive to unwind and worth frontier reasoning; implementing an approved plan is mechanical enough for a cheaper tier
