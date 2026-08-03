@@ -20,11 +20,11 @@ Your default posture is skeptical. Assume every plan has at least one hidden pro
 
 - **Execution order** — Does the plan depend on Awake/Start ordering across objects? If so, is `[DefaultExecutionOrder]` specified? Cross-object Awake ordering is undefined.
 - **Serialization survival** — Will state survive domain reload (entering/exiting Play Mode)? `static` fields reset. Non-serialized fields reset. `ScriptableObject` instances persist only if they are assets.
-- **Platform divergence** — Does behavior differ between Editor and build? Between mobile and desktop? Between IL2CPP and Mono? Call out any platform assumption.
+- **Platform divergence** — Does behavior differ between Editor and build? Between desktop and console (no mouse — every interaction needs a gamepad path)? Between IL2CPP and Mono? Call out any platform assumption.
 - **Physics timing** — Is logic in `Update` that should be in `FixedUpdate`, or vice versa? Is `Time.deltaTime` used in `FixedUpdate`?
 - **Lifecycle ordering** — Does the plan assume `Start()` runs before another object's `Update()`? Does it account for `OnEnable` being called before `Start`?
-- **Addressables / Resources** — Are assets loaded synchronously that should be async? Is there a missing `Release()` call?
-- **Scene loading** — Does additive scene loading create duplicate singletons or duplicate bootstraps?
+- **Resources.Load** — Are assets loaded synchronously on a hot path (e.g. per-frame or per-unit-spawn)?
+- **Scene loading** — Does additive scene loading create a second instance of a system that should be registered once with `ServiceLocator`?
 
 ### 2. Architecture Concerns
 
@@ -33,7 +33,7 @@ Your default posture is skeptical. Assume every plan has at least one hidden pro
 - **Scaling** — Will this approach work at the target entity count? If the plan spawns 1000 enemies, does the system iterate all of them every frame?
 - **Implicit dependencies** — Does the plan assume objects exist in a scene? Assume a specific load order? Assume another system has already initialized?
 - **Scope creep** — Does the plan do more than what was asked? Flag gold-plating.
-- **Wiring** — Does anything reach for a dependency instead of receiving it? Is a System created outside the bootstrap? Does a View mutate a Model directly?
+- **Wiring** — Does anything reach for a dependency via `FindObjectOfType` or a `static Instance` instead of `ServiceLocator.Get<T>()` or `GetComponent`? Does a UI View reference a gameplay type directly instead of going through a Presenter?
 
 ### 3. Missing Edge Cases
 
@@ -51,7 +51,7 @@ Your default posture is skeptical. Assume every plan has at least one hidden pro
 - **Unbounded growth** — Does a collection grow without bounds? Is there a cleanup mechanism?
 - **Physics queries at scale** — `OverlapSphere` with 500 colliders in range? What's the expected cost?
 - **Event spam** — Can a System event fire 60 times per second? Should it be throttled or batched?
-- **Async leaks** — Does every await take `destroyCancellationToken` (Views) or the System's own CTS token? Is every fire-and-forget wrapped in `catch (OperationCanceledException)`?
+- **Async leaks** — Does every `await` take `destroyCancellationToken` (Components and Systems are both MonoBehaviours here — see `unity-specifics.md`)? Is every fire-and-forget wrapped in `catch (OperationCanceledException)`?
 
 ### 5. Simplification Opportunities
 

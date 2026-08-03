@@ -3,7 +3,7 @@ name: unity-fixer
 description: "Diagnoses and fixes Unity bugs. Reads console errors via MCP, checks common Unity-specific causes (missing refs, execution order, coroutine lifecycle, destroyed object access), uses unity_reflect for live API inspection."
 model: opus
 color: red
-tools: Read, Write, Edit, Glob, Grep, Bash, mcp__unityMCP__*
+tools: Read, Write, Edit, Glob, Grep, Bash, mcp__UnityMCP__*
 ---
 
 # Unity Bug Fixer
@@ -30,23 +30,21 @@ In order of likelihood:
 2. **Missing Script Reference**
    - Class name doesn't match file name
    - Script was renamed without updating references
-   - Assembly definition issue (script not in correct asmdef)
 
 3. **Coroutine Issues**
    - Coroutine stopped by `SetActive(false)`
    - Coroutine stopped by `Destroy`
-   - `yield return new WaitForSeconds` inside tight loop (allocation)
+   - `yield return new WaitForSeconds` inside tight loop (allocation) — prefer `async Awaitable` for new code
 
 4. **Serialization Data Loss**
    - Field renamed without `[FormerlySerializedAs]`
    - Field type changed (int → float)
    - Public field made private without `[SerializeField]`
 
-5. **Physics Issues**
-   - Wrong collision layer matrix
-   - Missing collider/rigidbody
-   - Checking physics in `Update` instead of `FixedUpdate`
-   - Transform change then immediate raycast (needs `Physics.SyncTransforms`)
+5. **Service Locator Issues** (this project has no physics simulation — movement is grid-cell based, see `performance.md`)
+   - `ServiceLocator.Get<T>()` throwing "not registered" → called from a consumer's `Awake`, which can race the service's own `Awake`. Fix: fetch in `Start` instead, or check the service has `[DefaultExecutionOrder(-100)]`
+   - A System never got registered — check its `Awake` actually calls `ServiceLocator.Register<T>(this)`
+   - Stale reference after a scene reload → check `OnDestroy` calls `ServiceLocator.Unregister<T>()`
 
 6. **Editor vs Build Discrepancy**
    - `UnityEditor` namespace without `#if UNITY_EDITOR`

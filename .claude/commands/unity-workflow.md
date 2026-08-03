@@ -11,6 +11,17 @@ Orchestrate a complete development workflow for: **$ARGUMENTS**
 
 This command runs a 4-phase pipeline: **Clarify → Plan → Execute → Verify**. Each phase requires explicit user confirmation before proceeding to the next.
 
+## Phase 0: Sync
+
+Before clarifying requirements, sync with `main` (see `git-workflow.md`):
+
+```bash
+git checkout main
+git pull origin main
+```
+
+Skip this if the working tree isn't clean — stop and surface the uncommitted changes to the user instead of pulling over them. Implementation in Phase 3 happens on a feature branch (`git checkout -b feature/<short-description>`), created once the plan from Phase 2 is approved — not on `main`, which is protected and will reject the push. `require-feature-branch.sh` blocks any commit attempted directly on `main`.
+
 ## Phase 1: Clarify
 
 Interview the user to build a complete requirements picture. Ask about:
@@ -30,20 +41,15 @@ If the user provided a detailed description in `$ARGUMENTS` and the requirements
 
 Based on confirmed requirements:
 
-1. **Scan the project** — use `unity-scout` (haiku) for fast codebase exploration: read CLAUDE.md, find relevant existing scripts, map assembly structure
-2. **Identify subsystems** — which Unity packages and skills are involved?
-3. **Assess complexity** using the model-routing skill heuristics:
+1. **Scan the project** — use `unity-scout` (haiku) for fast codebase exploration: read CLAUDE.md, find relevant existing scripts, map current folder structure
+2. **Identify subsystems** — which Unity packages and `.claude/rules/` sections are involved?
+3. **Assess complexity** — this drives how much detail the plan needs, not which agent runs it (there's one implementer, `unity-coder`):
    - Count estimated files to create/modify
    - Check for complexity keywords in the task description
-   - Identify risk factors (serialization changes, networking, platform-specific, threading)
-   - Rate as **simple** (1-2 files, no risk) / **moderate** (3-8 files, some risk) / **complex** (9+ files, high risk)
-4. **Choose execution strategy** based on complexity:
-   - **Simple** → `unity-coder-lite` (sonnet) — faster, cheaper
-   - **Moderate** → `unity-coder` (opus) — deeper reasoning
-   - **Complex** → multiple agents via `/unity-team`
-   - **Specialized** → route to domain agent: `unity-prototyper`, `unity-ui-builder`, `unity-network-dev`, `unity-shader-dev`
-5. **Generate implementation plan**:
-   - Scripts to create/modify (with file paths and assembly placement)
+   - Identify risk factors (serialization changes, platform-specific code, threading)
+   - Rate as **simple** (1-2 files, no risk) / **moderate** (3-8 files, some risk) / **complex** (9+ files, high risk) — a complex rating means a more detailed plan and a mandatory Phase 2b critic pass, not a different agent
+4. **Generate implementation plan**:
+   - Scripts to create/modify (with file paths and target folder — see architecture.md's Folder Structure)
    - Scene changes needed (GameObjects, components, physics layers)
    - Dependencies on existing systems
    - Risk areas (serialization, platform-specific, performance)
@@ -65,11 +71,12 @@ Unless `--no-critic` is specified in the original arguments:
 
 Follow the approved plan:
 
-1. **Route to the appropriate agent(s)** based on the plan
-2. **Write C# code** following all rules in `.claude/rules/`
-3. **Set up scene elements** via MCP if needed (`batch_execute` for speed)
-4. **Check console** via `read_console` after each major step for compilation errors
-5. If errors are found, fix them before proceeding
+1. **Create a feature branch** — `git checkout -b feature/<short-description>` (or `fix/`, `chore/` as appropriate). Skip only if already on a non-`main` branch created for this work.
+2. **Route to the appropriate agent(s)** based on the plan
+3. **Write C# code** following all rules in `.claude/rules/`
+4. **Set up scene elements** via MCP if needed (`batch_execute` for speed)
+5. **Check console** via `read_console` after each major step for compilation errors
+6. If errors are found, fix them before proceeding
 
 Report progress at natural milestones (e.g., "Scripts written, setting up scene now...").
 
