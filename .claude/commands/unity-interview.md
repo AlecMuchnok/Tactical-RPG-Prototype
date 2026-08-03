@@ -29,21 +29,18 @@ Gather project context automatically and ask targeted questions:
 
 1. **Read** `CLAUDE.md` for project config (Unity version, render pipeline, target platform, packages)
 2. **Read** `Packages/manifest.json` to identify available packages
-3. **Scan** existing assembly definitions to understand project structure
-4. Ask about:
-   - **Performance budget** — target FPS? Memory ceiling? Max draw calls?
-   - **Platform constraints** — mobile thermal throttling? WebGL size limits?
-   - **Unity subsystems** — physics, UI, animation, audio, networking, addressables?
+3. Ask about:
+   - **Performance budget** — target FPS? Max draw calls? (see `performance.md`'s desktop/console frame budget)
+   - **Unity subsystems** — UI, animation, audio?
    - **Data persistence** — does any state need saving? What format?
-   - **Multiplayer** — any networked aspects? Authority model?
 
 ## Phase 3: Edge Case Identification
 
 For each major component identified in Phase 1-2, systematically explore:
 
-1. **Error states** — what happens when things go wrong? (null references, missing assets, network failure)
+1. **Error states** — what happens when things go wrong? (null references, missing assets)
 2. **Boundary conditions** — minimum/maximum values, empty collections, zero-duration timers
-3. **Platform differences** — does this behave differently on iOS vs Android? Editor vs build?
+3. **Platform differences** — does this behave differently on desktop vs console (gamepad-only input, no mouse)? Editor vs build?
 4. **Race conditions** — scene transitions, async operations, destruction timing
 5. **Performance under load** — what happens with 100x the expected entities/items/particles?
 6. **Undo/reset** — can the player undo this action? What happens on scene reload?
@@ -57,10 +54,10 @@ Identify every existing system the feature touches:
 1. **List systems** that will be read from, written to, or subscribed to
 2. For each system, clarify:
    - **Data flow direction** — does the new feature read, write, or both?
-   - **Ownership** — who owns the Model? Which System mutates it?
-   - **Event dependencies** — what events does this System raise, and which Systems/Views subscribe?
+   - **Ownership** — which Component owns this state? Is it registered with the ServiceLocator, or reached via GetComponent?
+   - **Event dependencies** — does this go through an SO event channel (`architecture.md` §2), or is it a same-object sibling call via `GetComponent`?
 3. **Identify new dependencies** — any new packages, services, or assets needed?
-4. **Assembly placement** — which assembly definition should new code live in?
+4. **Folder placement** — which `Scripts/` subfolder does new code live in (`Components/`, `Systems/`, `EventChannels/`, `StateMachines/`, `Commands/`, `Data/`, `UI/Views/`, `UI/Presenters/`, `Input/`, `Utility/`)?
 
 Present an integration diagram (text-based) showing data flow between systems.
 
@@ -98,9 +95,9 @@ After all phases are complete, generate a comprehensive document:
 - **Output:** [what the feature produces]
 
 ### Technical Requirements
-- **Unity:** [version] | **Pipeline:** [URP/HDRP/Built-in] | **Platform:** [targets]
-- **Subsystems:** [physics, UI, animation, etc.]
-- **Performance budget:** [FPS, memory, draw calls]
+- **Unity:** [version] | **Pipeline:** URP | **Platform:** desktop + console
+- **Subsystems:** [UI, animation, audio, etc.]
+- **Performance budget:** [FPS, draw calls — see `performance.md`]
 - **Data persistence:** [yes/no, format]
 
 ### Edge Cases
@@ -113,9 +110,8 @@ After all phases are complete, generate a comprehensive document:
 |--------|-----------|----------|
 | [system] | read/write/both | [events raised / subscribed] |
 
-### Assembly Placement
-- New scripts go in: `[assembly name]`
-- New tests go in: `[test assembly name]`
+### Folder Placement
+- New scripts go in: `[Scripts/Components|Systems|EventChannels|StateMachines|Commands|Data|UI/Views|UI/Presenters|Input|Utility]`
 
 ### Acceptance Criteria
 1. [ ] [criterion]

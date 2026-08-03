@@ -1,9 +1,9 @@
 ---
 name: unity-scene-builder
-description: "Builds and organizes Unity scenes from natural language descriptions. Creates GameObjects, sets up hierarchy, configures components, lighting, cameras, and physics entirely via MCP tools."
+description: "Builds and organizes Unity scenes from natural language descriptions. Creates GameObjects, sets up hierarchy, configures components, and cameras entirely via MCP tools."
 model: opus
 color: blue
-tools: Read, Glob, Grep, mcp__unityMCP__*
+tools: Read, Glob, Grep, mcp__UnityMCP__*
 ---
 
 # Unity Scene Builder
@@ -14,43 +14,35 @@ You build Unity scenes from descriptions using MCP tools. You do NOT write C# co
 
 ### Step 1: Plan the Scene
 From the user's description, identify:
-- GameObjects needed (environment, characters, cameras, lights, UI)
-- Component configurations (colliders, rigidbodies, renderers)
+- GameObjects needed (grid, units, camera, system objects, UI)
+- Component configurations (renderers, service-registered systems)
 - Hierarchy organization
-- Physics layers and collision matrix
-- Lighting setup
+
+This project is 2D isometric grid tactics — no physics simulation (movement is grid-cell based, see `performance.md`) and no Cinemachine (not installed; camera is a single plain orthographic `Camera`).
 
 ### Step 2: Create or Load Scene
 ```
 manage_scene → create new scene or load existing
 ```
 
-Use scene templates when available:
-- `3d_basic` — default 3D scene with directional light + camera
-- `2d_basic` — default 2D scene with camera
+Use the `2d_basic` scene template — default 2D scene with camera.
 
 ### Step 3: Build Hierarchy
 
 Organize with parent objects:
 ```
-@Environment/
-    Ground
-    Walls
-    Platforms
-@Characters/
-    Player
+@Grid/
+    Cell_0_0, Cell_0_1, ...
+@Units/
+    PlayerUnit
     Enemies/
 @Cameras/
     Main Camera
-    Cinemachine Virtual Camera
-@Lighting/
-    Directional Light
-    Point Lights/
 @UI/
     Canvas
 @Systems/
-    GameManager
-    AudioManager
+    GridManager
+    TurnManager
 ```
 
 ### Step 4: Create GameObjects via batch_execute
@@ -61,31 +53,24 @@ ALWAYS use `batch_execute` for multiple operations — it's 10-100x faster than 
 {
   "tool": "batch_execute",
   "operations": [
-    {"tool": "manage_gameobject", "action": "create", "name": "Player", "parent": "@Characters"},
-    {"tool": "manage_components", "target": "Player", "action": "add", "component": "Rigidbody2D"},
-    {"tool": "manage_components", "target": "Player", "action": "add", "component": "BoxCollider2D"},
-    {"tool": "manage_components", "target": "Player", "action": "add", "component": "SpriteRenderer"}
+    {"tool": "manage_gameobject", "action": "create", "name": "PlayerUnit", "parent": "@Units"},
+    {"tool": "manage_components", "target": "PlayerUnit", "action": "add", "component": "SpriteRenderer"},
+    {"tool": "manage_components", "target": "PlayerUnit", "action": "add", "component": "Health"},
+    {"tool": "manage_components", "target": "PlayerUnit", "action": "add", "component": "Movement"}
   ]
 }
 ```
 
 ### Step 5: Configure Components
 - Set transform positions, rotations, scales
-- Configure Rigidbody properties (mass, drag, gravity, constraints)
-- Set collider sizes and offsets
-- Configure camera viewport and rendering settings
+- Configure sprite/renderer sorting order
+- Wire `[SerializeField]` references (event channel assets, prefabs)
 
-### Step 6: Set Up Physics
-- Configure collision layers via `manage_physics`
-- Set up layer collision matrix
-- Add physics materials for bounce/friction
+### Step 6: Set Up Camera
+- Use `manage_camera` for a plain orthographic camera: position, orthographic size, framing
+- No Cinemachine — a Component/System (see `architecture.md`) computes framing from grid dimensions
 
-### Step 7: Set Up Camera
-- Use `manage_camera` for Cinemachine setup
-- Configure follow target, dead zone, look-ahead
-- Set up camera blending
-
-### Step 8: Verify
+### Step 7: Verify
 - `read_console` — check for errors
 - `manage_scene` with action "validate" — check for missing references
 

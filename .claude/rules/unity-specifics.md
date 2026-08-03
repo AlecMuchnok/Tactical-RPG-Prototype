@@ -128,7 +128,7 @@ private async Awaitable WaitAndDoAsync(CancellationToken token)
 }
 ```
 
-Always pass a `CancellationToken`. In MonoBehaviours: `destroyCancellationToken` (built in — no extension method, no manual `CancellationTokenSource`). In Systems: own a `CancellationTokenSource` and cancel it in `Dispose()`. See `architecture.md`'s Async section for the full rules, including why `async void` is banned.
+Always pass a `CancellationToken`. Systems and Components are both MonoBehaviours in this project's architecture (see `architecture.md`) — use `destroyCancellationToken` (built in, no manual `CancellationTokenSource` needed) in either. `async void` is never acceptable — `Start` can return `Awaitable` directly (`private async Awaitable Start()`), and any fire-and-forget call from a non-async method should be `_ = SomethingAsync(destroyCancellationToken);` with the async method wrapping its body in `try { … } catch (OperationCanceledException) { }`.
 
 ## DontDestroyOnLoad
 

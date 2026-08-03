@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# gateguard.sh — BLOCKING HOOK (strict profile)
+# gateguard.sh — BLOCKING HOOK (standard profile)
 # Three-stage fact-forcing gate for C# edits: DENY -> FORCE -> ALLOW
 #
 #   Stage 1 (DENY):  Block first Edit/Write on a C# file. Force investigation.
@@ -18,7 +18,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOOK_PROFILE_LEVEL="strict"
+HOOK_PROFILE_LEVEL="standard"  # was "strict" — the active profile defaults to
+                                # "standard", which silently disabled this hook
+                                # entirely. track-reads.sh must stay in sync.
 source "${SCRIPT_DIR}/_lib.sh"
 
 INPUT=$(cat)

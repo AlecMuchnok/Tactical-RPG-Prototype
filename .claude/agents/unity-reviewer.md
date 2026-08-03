@@ -20,8 +20,7 @@ You are a senior Unity code reviewer. Review code for correctness, performance, 
 - [ ] **Unity null check** — using `?.` or `is null` on Unity objects instead of `== null`?
 - [ ] **Editor in runtime** — `UnityEditor` namespace used without `#if UNITY_EDITOR` guard?
 - [ ] **File/class mismatch** — MonoBehaviour class name doesn't match file name?
-- [ ] **DOTween cleanup** — tweens killed in `OnDestroy`? Missing `DOTween.Kill(this)`?
-- [ ] **Event leaks** — subscribed in `OnEnable`/`Awake` but not unsubscribed in `OnDisable`/`OnDestroy`?
+- [ ] **Event leaks** — subscribed but not paired with the matching unsubscribe (`architecture.md` §2's table: sibling components pair `Awake`/`OnDestroy`; SO event channels, input, and UI controls pair `OnEnable`/`OnDisable`)?
 - [ ] **Async void** — naked `async void` instead of `async Awaitable` (Unity 6 supports `async Awaitable Start()`, so there's no case that legitimately needs `async void`)?
 
 ### Performance (Should Fix)

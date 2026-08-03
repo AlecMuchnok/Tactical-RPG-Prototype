@@ -30,20 +30,15 @@ If the user provided a detailed description in `$ARGUMENTS` and the requirements
 
 Based on confirmed requirements:
 
-1. **Scan the project** — use `unity-scout` (haiku) for fast codebase exploration: read CLAUDE.md, find relevant existing scripts, map assembly structure
-2. **Identify subsystems** — which Unity packages and skills are involved?
-3. **Assess complexity** using the model-routing skill heuristics:
+1. **Scan the project** — use `unity-scout` (haiku) for fast codebase exploration: read CLAUDE.md, find relevant existing scripts, map current folder structure
+2. **Identify subsystems** — which Unity packages and `.claude/rules/` sections are involved?
+3. **Assess complexity** — this drives how much detail the plan needs, not which agent runs it (there's one implementer, `unity-coder`):
    - Count estimated files to create/modify
    - Check for complexity keywords in the task description
-   - Identify risk factors (serialization changes, networking, platform-specific, threading)
-   - Rate as **simple** (1-2 files, no risk) / **moderate** (3-8 files, some risk) / **complex** (9+ files, high risk)
-4. **Choose execution strategy** based on complexity:
-   - **Simple** → `unity-coder-lite` (sonnet) — faster, cheaper
-   - **Moderate** → `unity-coder` (opus) — deeper reasoning
-   - **Complex** → multiple agents via `/unity-team`
-   - **Specialized** → route to domain agent: `unity-prototyper`, `unity-ui-builder`, `unity-network-dev`, `unity-shader-dev`
-5. **Generate implementation plan**:
-   - Scripts to create/modify (with file paths and assembly placement)
+   - Identify risk factors (serialization changes, platform-specific code, threading)
+   - Rate as **simple** (1-2 files, no risk) / **moderate** (3-8 files, some risk) / **complex** (9+ files, high risk) — a complex rating means a more detailed plan and a mandatory Phase 2b critic pass, not a different agent
+4. **Generate implementation plan**:
+   - Scripts to create/modify (with file paths and target folder — see architecture.md's Folder Structure)
    - Scene changes needed (GameObjects, components, physics layers)
    - Dependencies on existing systems
    - Risk areas (serialization, platform-specific, performance)

@@ -24,7 +24,7 @@ Current milestone: prototyping a 10x10 isometric grid with a single player unit 
 
 ### Assembly Definitions
 
-No `.asmdef` files exist yet — the project is a single default assembly. Add assembly definitions (see [assembly-definitions skill](.claude/skills/core/assembly-definitions)) once the codebase grows enough to need compile-time dependency direction enforcement or faster iteration.
+No `.asmdef` files exist yet — the project is a single default assembly. Add assembly definitions once the codebase grows enough to need compile-time dependency direction enforcement or faster iteration.
 
 ### Scenes in Build
 
@@ -49,7 +49,7 @@ Detailed, enforced rules live in `.claude/rules/`. Read the relevant file before
 This project is driven through the Unity Editor via the UnityMCP tool integration — there is no separate CLI build or test command yet. Use MCP tools/agents for:
 
 - Editor state, GameObjects, scenes, and assets — `mcp__UnityMCP__*` tools
-- Running tests once they exist — `mcp__UnityMCP__run_tests` (no tests exist yet; see `unity-test` skill/agent to add them)
+- Running tests, once a test assembly exists — `mcp__UnityMCP__run_tests` (no tests exist yet, and writing them is currently out of scope for the `.claude/` toolkit — see `/unity-workflow`, `/unity-feature`, `/unity-review`, `/unity-fix`, `/unity-scene`, `/unity-interview` for what's supported)
 - Console output/errors — `mcp__UnityMCP__read_console`
 
 Check `mcpforunity://custom-tools` for any project-specific MCP tools before assuming a capability doesn't exist.

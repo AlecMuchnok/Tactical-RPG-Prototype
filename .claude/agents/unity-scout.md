@@ -23,8 +23,8 @@ You are a lightweight exploration agent. Your job is to quickly scan the Unity p
 ### Project Scan
 When asked to scan a project:
 1. Read `CLAUDE.md` for project configuration
-2. Glob for `*.asmdef` to understand assembly structure
-3. Glob for `*.cs` to count scripts by folder
+2. Glob for `*.asmdef` — if any exist, note the assembly structure; this project currently has none (single default assembly)
+3. Glob for `*.cs` to count scripts by folder (`Scripts/Components/`, `Scripts/Systems/`, etc. — see `architecture.md`'s Folder Structure)
 4. Glob for `*.unity` to list scenes
 5. Check `Packages/manifest.json` for dependencies
 6. Report a structured summary

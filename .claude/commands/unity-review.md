@@ -29,8 +29,7 @@ Use the `unity-reviewer` agent to check:
 - `?.` or `is null` used on Unity objects (must use `== null`)
 - `UnityEditor` namespace in runtime code without `#if UNITY_EDITOR`
 - MonoBehaviour class name doesn't match file name
-- DOTween not killed in `OnDestroy`
-- Event subscriptions without matching unsubscribe
+- Event subscriptions without matching unsubscribe (see `architecture.md` §2's subscribe/unsubscribe pairing table)
 - Naked `async void` methods
 
 ### 2. Performance Issues (should fix)

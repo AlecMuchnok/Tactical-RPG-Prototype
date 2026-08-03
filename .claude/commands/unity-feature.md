@@ -11,9 +11,7 @@ Plan and implement the feature described by the user: **$ARGUMENTS**
 
 ## Agent Routing
 
-- Default: use `unity-coder` agent (opus — full architectural reasoning)
-- If `$ARGUMENTS` contains `--quick`: use `unity-coder-lite` agent (sonnet — faster, for simple additions)
-- Strip the `--quick` flag from arguments before passing to the agent
+Use the `unity-coder` agent (opus — full architectural reasoning) for all features regardless of size; a small feature just gets a shorter plan in Phase 1.
 
 ## Phase 1: Plan
 
@@ -35,7 +33,7 @@ Plan and implement the feature described by the user: **$ARGUMENTS**
 
 1. **Write C# code** using the `unity-coder` agent:
    - Follow all rules in `.claude/rules/`
-   - Place scripts in correct assembly definition
+   - Place scripts in the correct folder per `architecture.md`'s Folder Structure (`Components/`, `Systems/`, `EventChannels/`, `StateMachines/`, `Commands/`, `Data/`, `UI/Views/`, `UI/Presenters/`, `Input/`, `Utility/`)
    - Use `[SerializeField]` for inspector configuration
    - Add `[Header]` attributes for organization
 
