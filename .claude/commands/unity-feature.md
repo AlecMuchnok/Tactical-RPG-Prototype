@@ -13,6 +13,10 @@ Plan and implement the feature described by the user: **$ARGUMENTS**
 
 Use the `unity-coder` agent (opus — full architectural reasoning) for all features regardless of size; a small feature just gets a shorter plan in Phase 1.
 
+## Phase 0: Sync
+
+Before planning, sync with `main` (see `git-workflow.md`): `git checkout main && git pull origin main`. Skip if the working tree isn't clean — surface that to the user instead of pulling over it.
+
 ## Phase 1: Plan
 
 1. **Analyze the feature** — identify which Unity subsystems are involved:
@@ -31,18 +35,18 @@ Use the `unity-coder` agent (opus — full architectural reasoning) for all feat
 
 ## Phase 2: Implement
 
-1. **Write C# code** using the `unity-coder` agent:
+1. **Create a feature branch** if not already on one — `git checkout -b feature/<short-description>` (`main` is protected; `require-feature-branch.sh` blocks committing there directly).
+2. **Write C# code** using the `unity-coder` agent:
    - Follow all rules in `.claude/rules/`
    - Place scripts in the correct folder per `architecture.md`'s Folder Structure (`Components/`, `Systems/`, `EventChannels/`, `StateMachines/`, `Commands/`, `Data/`, `UI/Views/`, `UI/Presenters/`, `Input/`, `Utility/`)
    - Use `[SerializeField]` for inspector configuration
    - Add `[Header]` attributes for organization
 
-2. **Set up scene elements** via MCP:
+3. **Set up scene elements** via MCP:
    - Create GameObjects with `batch_execute`
    - Configure components
-   - Set up physics layers if needed
 
-3. **Check console** via `read_console` for compilation errors.
+4. **Check console** via `read_console` for compilation errors.
 
 ## Phase 3: Verify
 

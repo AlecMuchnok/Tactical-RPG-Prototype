@@ -41,6 +41,7 @@ Detailed, enforced rules live in `.claude/rules/`. Read the relevant file before
 - [performance.md](.claude/rules/performance.md) — zero-allocation hot paths, draw call budget, atlasing/batching, UI canvas splitting
 - [serialization.md](.claude/rules/serialization.md) — `[FormerlySerializedAs]` on renames, Unity's `== null` vs `is null`, `[SerializeReference]` for polymorphism
 - [unity-specifics.md](.claude/rules/unity-specifics.md) — New Input System usage, `#if UNITY_EDITOR` guards, lifecycle order, `Awaitable` over coroutines, desktop/console platform defines
+- [git-workflow.md](.claude/rules/git-workflow.md) — `main` is protected: pull it before planning new work, branch before implementing (enforced by `require-feature-branch.sh`)
 
 ---
 

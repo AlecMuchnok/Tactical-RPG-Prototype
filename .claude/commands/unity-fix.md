@@ -30,7 +30,7 @@ Use the selected fixer agent to:
    - Service not found → `ServiceLocator.Get<T>()` called from Awake before the service registered (see `architecture.md` §6's ordering rule)
    - Build failure → UnityEditor in runtime, platform defines
 
-3. **Fix** — apply the minimal targeted fix. Don't refactor surrounding code.
+3. **Fix** — create a branch if not already on one (`git checkout -b fix/<short-description>` — `main` is protected and `require-feature-branch.sh` blocks committing there directly), then apply the minimal targeted fix. Don't refactor surrounding code.
 
 4. **Verify:**
    - Check console via `read_console` — error should be gone

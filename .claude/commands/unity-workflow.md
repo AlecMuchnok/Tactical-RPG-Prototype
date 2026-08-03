@@ -11,6 +11,17 @@ Orchestrate a complete development workflow for: **$ARGUMENTS**
 
 This command runs a 4-phase pipeline: **Clarify → Plan → Execute → Verify**. Each phase requires explicit user confirmation before proceeding to the next.
 
+## Phase 0: Sync
+
+Before clarifying requirements, sync with `main` (see `git-workflow.md`):
+
+```bash
+git checkout main
+git pull origin main
+```
+
+Skip this if the working tree isn't clean — stop and surface the uncommitted changes to the user instead of pulling over them. Implementation in Phase 3 happens on a feature branch (`git checkout -b feature/<short-description>`), created once the plan from Phase 2 is approved — not on `main`, which is protected and will reject the push. `require-feature-branch.sh` blocks any commit attempted directly on `main`.
+
 ## Phase 1: Clarify
 
 Interview the user to build a complete requirements picture. Ask about:
@@ -60,11 +71,12 @@ Unless `--no-critic` is specified in the original arguments:
 
 Follow the approved plan:
 
-1. **Route to the appropriate agent(s)** based on the plan
-2. **Write C# code** following all rules in `.claude/rules/`
-3. **Set up scene elements** via MCP if needed (`batch_execute` for speed)
-4. **Check console** via `read_console` after each major step for compilation errors
-5. If errors are found, fix them before proceeding
+1. **Create a feature branch** — `git checkout -b feature/<short-description>` (or `fix/`, `chore/` as appropriate). Skip only if already on a non-`main` branch created for this work.
+2. **Route to the appropriate agent(s)** based on the plan
+3. **Write C# code** following all rules in `.claude/rules/`
+4. **Set up scene elements** via MCP if needed (`batch_execute` for speed)
+5. **Check console** via `read_console` after each major step for compilation errors
+6. If errors are found, fix them before proceeding
 
 Report progress at natural milestones (e.g., "Scripts written, setting up scene now...").
 
