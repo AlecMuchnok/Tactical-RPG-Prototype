@@ -3,9 +3,9 @@ set -euo pipefail
 
 # =============================================================================
 # validate-architecture.sh
-# Checks Model-View-System (MVS) architecture compliance via grep-based
-# static analysis. Detects violations of dependency direction, forbidden
-# patterns (singletons, coroutines), and injection misuse.
+# Checks compliance with the architecture stack in .claude/rules/architecture.md
+# (component composition, SO event channels, state machines, command pattern,
+# MVP for UI, service locator) via grep-based static analysis.
 #
 # Usage:
 #   ./scripts/validate-architecture.sh [--path <dir>]
@@ -27,7 +27,7 @@ fi
 # ---------------------------------------------------------------------------
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     cat <<EOF
-${BOLD}validate-architecture.sh${RESET} - MVS architecture compliance checker.
+${BOLD}validate-architecture.sh${RESET} - architecture stack compliance checker.
 
 ${BOLD}Usage:${RESET}
   ./scripts/validate-architecture.sh [OPTIONS]
@@ -37,11 +37,11 @@ ${BOLD}Options:${RESET}
   -h, --help     Show this help
 
 ${BOLD}What it checks:${RESET}
-  1. Models don't reference Views, Systems, or MonoBehaviour
-  2. Systems don't reference Views or MonoBehaviour
-  3. No singleton patterns (static Instance, FindObjectOfType)
-  4. Coroutine usage (prefer async Awaitable)
-  5. Views don't mutate Models or construct Systems
+  1. UI Views (Scripts/UI/Views/) don't reference gameplay types — MVP boundary
+  2. No singleton patterns (static Instance, FindObjectOfType) outside ServiceLocator
+  3. Coroutine usage (prefer async Awaitable)
+  4. ServiceLocator.Get<T>() called from Awake — the documented ordering gotcha
+  5. Systems (Scripts/Systems/) register/unregister with ServiceLocator
 
 ${BOLD}Note:${RESET}
   This is heuristic-based (grep). It may produce false positives.
@@ -104,83 +104,52 @@ report_issue() {
 }
 
 # ---------------------------------------------------------------------------
-# Check 1: Models must not reference Views or Systems
+# Check 1: UI Views must not reference gameplay types (MVP boundary)
 # ---------------------------------------------------------------------------
-echo "${BOLD}${CYAN}[1/5] Checking Model dependency direction...${RESET}"
+echo "${BOLD}${CYAN}[1/5] Checking UI View / Presenter boundary...${RESET}"
 
-MODEL_FILES=$(find "$SCAN_PATH" -name "*Model.cs" -o -name "*Model[0-9]*.cs" | grep -v '/Editor/' | grep -v '/Tests/' || true)
+VIEW_FILES=$(find "$SCAN_PATH" -path "*/UI/Views/*" -name "*.cs" 2>/dev/null || true)
+
+# Gameplay types a View must never reference directly — Components, Systems,
+# EventChannels, and the ServiceLocator all belong to the Presenter side of
+# the boundary (architecture.md §5, MVP for UI).
+GAMEPLAY_TYPE_PATTERN='\bServiceLocator\b|EventChannelSO\b'
 
 while IFS= read -r FILE; do
     [[ -z "$FILE" ]] && continue
 
-    # Check for MonoBehaviour inheritance (Models should be pure C#)
-    LINE_NUM=$(grep -nE ':\s*MonoBehaviour' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
+    LINE_NUM=$(grep -nE "$GAMEPLAY_TYPE_PATTERN" "$FILE" \
+        | grep -v 'architecture:ignore' | grep -v '^\s*//' | head -1 | cut -d: -f1 || true)
     if [[ -n "$LINE_NUM" ]]; then
-        report_issue "ERROR" "$FILE" "$LINE_NUM" "Model inherits MonoBehaviour — Models must be pure C# classes"
+        report_issue "WARNING" "$FILE" "$LINE_NUM" \
+            "UI View references a gameplay-facing type (ServiceLocator/event channel) — only a Presenter may; the View should expose plain setters instead"
     fi
-
-    # Check for View references
-    LINE_NUM=$(grep -nE '\bI?\w+View\b' "$FILE" | grep -v '^\s*//' | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
-    if [[ -n "$LINE_NUM" ]]; then
-        report_issue "ERROR" "$FILE" "$LINE_NUM" "Model references a View — Models must not depend on Views"
-    fi
-
-    # Check for System references (but allow the word "System" in using statements)
-    LINE_NUM=$(grep -nE '\b\w+System\b' "$FILE" | grep -v '^\s*using' | grep -v '^\s*//' | grep -v 'architecture:ignore' | grep -v 'IDisposable' | head -1 | cut -d: -f1 || true)
-    if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" "Model may reference a System — check dependency direction"
-    fi
-done <<< "$MODEL_FILES"
+done <<< "$VIEW_FILES"
 echo ""
 
 # ---------------------------------------------------------------------------
-# Check 2: Systems must not reference Views
+# Check 2: No singletons outside the ServiceLocator
 # ---------------------------------------------------------------------------
-echo "${BOLD}${CYAN}[2/5] Checking System dependency direction...${RESET}"
-
-SYSTEM_FILES=$(find "$SCAN_PATH" -name "*System.cs" -o -name "*System[0-9]*.cs" | grep -v '/Editor/' | grep -v '/Tests/' || true)
-
-while IFS= read -r FILE; do
-    [[ -z "$FILE" ]] && continue
-
-    # Check for MonoBehaviour inheritance
-    LINE_NUM=$(grep -nE ':\s*MonoBehaviour' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
-    if [[ -n "$LINE_NUM" ]]; then
-        report_issue "ERROR" "$FILE" "$LINE_NUM" "System inherits MonoBehaviour — Systems must be plain C# classes"
-    fi
-
-    # Check for View references
-    LINE_NUM=$(grep -nE '\bI?\w+View\b' "$FILE" | grep -v '^\s*//' | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
-    if [[ -n "$LINE_NUM" ]]; then
-        report_issue "ERROR" "$FILE" "$LINE_NUM" "System references a View — Systems must not depend on Views"
-    fi
-done <<< "$SYSTEM_FILES"
-echo ""
-
-# ---------------------------------------------------------------------------
-# Check 3: No singletons
-# ---------------------------------------------------------------------------
-echo "${BOLD}${CYAN}[3/5] Checking for singleton patterns...${RESET}"
+echo "${BOLD}${CYAN}[2/5] Checking for singleton patterns...${RESET}"
 
 ALL_CS=$(find "$SCAN_PATH" -name "*.cs" -not -path "*/Editor/*" -not -path "*/Tests/*" 2>/dev/null || true)
 
 while IFS= read -r FILE; do
     [[ -z "$FILE" ]] && continue
 
-    # Skip Bootstrap files (they are the one place allowed to construct Systems
-    # and reference broadly — that's their job)
-    case "$FILE" in *Bootstrap*) continue ;; esac
+    # ServiceLocator.cs itself is the one sanctioned registry — skip it.
+    case "$FILE" in */ServiceLocator.cs) continue ;; esac
 
     # Static Instance pattern
     LINE_NUM=$(grep -nE 'static\s+\w+\s+Instance\b' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
     if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" "Singleton pattern detected (static Instance) — create it in the scene bootstrap and pass it in"
+        report_issue "WARNING" "$FILE" "$LINE_NUM" "Singleton pattern detected (static Instance) — register with ServiceLocator instead"
     fi
 
     # FindObjectOfType outside of tests
     LINE_NUM=$(grep -nE 'FindObjectOfType|FindObjectsOfType|FindFirstObjectByType' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
     if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" "FindObjectOfType usage — pass the reference in via the bootstrap's Init(...) call"
+        report_issue "WARNING" "$FILE" "$LINE_NUM" "FindObjectOfType usage — fetch shared systems via ServiceLocator.Get<T>(), sibling components via GetComponent"
     fi
 
     # DontDestroyOnLoad outside a bootstrap
@@ -192,9 +161,9 @@ done <<< "$ALL_CS"
 echo ""
 
 # ---------------------------------------------------------------------------
-# Check 4: No coroutines
+# Check 3: No coroutines
 # ---------------------------------------------------------------------------
-echo "${BOLD}${CYAN}[4/5] Checking for coroutine usage...${RESET}"
+echo "${BOLD}${CYAN}[3/5] Checking for coroutine usage...${RESET}"
 
 while IFS= read -r FILE; do
     [[ -z "$FILE" ]] && continue
@@ -217,34 +186,56 @@ done <<< "$ALL_CS"
 echo ""
 
 # ---------------------------------------------------------------------------
-# Check 5: View -> Model write direction
-# (convention-dependent: assumes a View's Model field is named `_model`, per
-# the architecture.md Views example. A View naming its field differently won't
-# be caught by this heuristic.)
+# Check 4: ServiceLocator.Get<T>() called from Awake — the documented
+# ordering gotcha (architecture.md §6): Unity doesn't guarantee Awake order
+# across objects, so a consumer fetching in its own Awake can run before the
+# service has registered. Heuristic: flag a Get< call appearing between an
+# Awake( line and the next Start(/private void/public void method boundary
+# is hard to do reliably in grep, so this checks the simpler, still-useful
+# signal — Get< appearing anywhere in a file that also defines Awake but no
+# Start, which is the shape most likely to hit the bug.
 # ---------------------------------------------------------------------------
-echo "${BOLD}${CYAN}[5/5] Checking View → Model write direction...${RESET}"
+echo "${BOLD}${CYAN}[4/5] Checking ServiceLocator.Get<T>() ordering...${RESET}"
 
-VIEW_FILES=$(find "$SCAN_PATH" -name "*View.cs" -not -path "*/Editor/*" -not -path "*/Tests/*" 2>/dev/null || true)
+while IFS= read -r FILE; do
+    [[ -z "$FILE" ]] && continue
+    case "$FILE" in */ServiceLocator.cs) continue ;; esac
+
+    HAS_GET=$(grep -cE 'ServiceLocator\.Get<' "$FILE" 2>/dev/null || true)
+    HAS_AWAKE=$(grep -cE 'void\s+Awake\s*\(' "$FILE" 2>/dev/null || true)
+    HAS_START=$(grep -cE 'void\s+Start\s*\(' "$FILE" 2>/dev/null || true)
+
+    if [[ "${HAS_GET:-0}" -gt 0 && "${HAS_AWAKE:-0}" -gt 0 && "${HAS_START:-0}" -eq 0 ]]; then
+        LINE_NUM=$(grep -nE 'ServiceLocator\.Get<' "$FILE" | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
+        if [[ -n "$LINE_NUM" ]]; then
+            report_issue "WARNING" "$FILE" "$LINE_NUM" \
+                "ServiceLocator.Get<T>() with an Awake but no Start — confirm this isn't fetching from inside Awake (Awake order isn't guaranteed across objects; fetch in Start instead)"
+        fi
+    fi
+done <<< "$ALL_CS"
+echo ""
+
+# ---------------------------------------------------------------------------
+# Check 5: Systems register/unregister with the ServiceLocator
+# ---------------------------------------------------------------------------
+echo "${BOLD}${CYAN}[5/5] Checking System registration with ServiceLocator...${RESET}"
+
+SYSTEM_FILES=$(find "$SCAN_PATH" -path "*/Systems/*" -name "*.cs" 2>/dev/null || true)
 
 while IFS= read -r FILE; do
     [[ -z "$FILE" ]] && continue
 
-    # A View calling _model.SetXxx(...) means logic leaked out of a System.
-    LINE_NUM=$(grep -nE '_model\.Set[A-Z]\w*\s*\(' "$FILE" \
-        | grep -v 'architecture:ignore' | grep -v '^\s*//' | head -1 | cut -d: -f1 || true)
-    if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" \
-            "View mutates a Model directly — call a System instead; only Systems mutate Models"
-    fi
+    HAS_REGISTER=$(grep -cE 'ServiceLocator\.Register<' "$FILE" 2>/dev/null || true)
+    HAS_UNREGISTER=$(grep -cE 'ServiceLocator\.Unregister<' "$FILE" 2>/dev/null || true)
 
-    # A View that news up a System is doing the bootstrap's job.
-    LINE_NUM=$(grep -nE 'new\s+\w+System\s*\(' "$FILE" \
-        | grep -v 'architecture:ignore' | head -1 | cut -d: -f1 || true)
-    if [[ -n "$LINE_NUM" ]]; then
-        report_issue "WARNING" "$FILE" "$LINE_NUM" \
-            "View constructs a System — only the scene bootstrap creates Systems"
+    if [[ "${HAS_REGISTER:-0}" -eq 0 ]]; then
+        report_issue "WARNING" "$FILE" "1" \
+            "File in Scripts/Systems/ has no ServiceLocator.Register<T>() call — confirm it's meant to be reached via the locator"
+    elif [[ "${HAS_UNREGISTER:-0}" -eq 0 ]]; then
+        report_issue "WARNING" "$FILE" "1" \
+            "Registers with ServiceLocator but never calls Unregister<T>() in OnDestroy — it will leak a stale reference across scene reloads"
     fi
-done <<< "$VIEW_FILES"
+done <<< "$SYSTEM_FILES"
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -257,7 +248,7 @@ if [[ $TOTAL -eq 0 ]]; then
 else
     echo "${BOLD}Architecture check: ${RED}$ERRORS error(s)${RESET}, ${YELLOW}$WARNINGS warning(s)${RESET}"
     if [[ $ERRORS -gt 0 ]]; then
-        echo "Errors indicate MVS pattern violations that should be fixed."
+        echo "Errors indicate architecture-stack violations that should be fixed."
     fi
     echo ""
     echo "Suppress false positives by adding ${CYAN}// architecture:ignore${RESET} to the line."

@@ -20,7 +20,7 @@ Current milestone: prototyping a 10x10 isometric grid with a single player unit 
 - Unity Test Framework
 - Unity MCP for Unity (`com.coplaydev.unity-mcp`) — enables MCP-driven Editor automation
 
-**No third-party frameworks.** This project deliberately uses no DI container, no message bus, and no async library. Dependency wiring is a per-scene bootstrap MonoBehaviour, cross-system communication is plain C# events, and async is `UnityEngine.Awaitable`. See [architecture.md](.claude/rules/architecture.md). Do not add VContainer / Zenject / MessagePipe / UniTask / R3 without an explicit decision to change this.
+**No heavy frameworks.** No Unity ECS/DOTS, no Zenject/VContainer — the architecture stack is deliberately lightweight: component composition, ScriptableObject data + event channels, state machines, the command pattern, MVP for UI, and a small explicit service locator (not a God Container) for shared systems like `GridManager`/`TurnManager`. Async is `UnityEngine.Awaitable`. See [architecture.md](.claude/rules/architecture.md) for the full stack and the reasoning behind each piece.
 
 ### Assembly Definitions
 
@@ -36,7 +36,7 @@ No `.asmdef` files exist yet — the project is a single default assembly. Add a
 
 Detailed, enforced rules live in `.claude/rules/`. Read the relevant file before writing code in that area:
 
-- [architecture.md](.claude/rules/architecture.md) — Model-View-System pattern, composition-root wiring, C# events, `Awaitable` async, no singletons/service locators
+- [architecture.md](.claude/rules/architecture.md) — component composition, SO data + event channels, state machines, command pattern, MVP for UI, service locator for shared systems
 - [csharp-unity.md](.claude/rules/csharp-unity.md) — naming conventions, encapsulation (private-by-default), file/type structure ordering
 - [performance.md](.claude/rules/performance.md) — zero-allocation hot paths, draw call budget, atlasing/batching, UI canvas splitting
 - [serialization.md](.claude/rules/serialization.md) — `[FormerlySerializedAs]` on renames, Unity's `== null` vs `is null`, `[SerializeReference]` for polymorphism

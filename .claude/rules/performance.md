@@ -59,6 +59,32 @@ Cache these in Awake — NEVER call in Update:
 - `SetActive(false)` to return to pool, not `Destroy`
 - `DontDestroyOnLoad` sparingly — prefer bootstrapper scene
 
+### Object Pooling (MANDATORY for VFX and Projectiles)
+
+Any VFX or projectile that spawns per-hit, per-cast, or per-frame **must** come from a pool — `Instantiate`/`Destroy` churn on these is not acceptable, even in a turn-based game, because a single ability can spawn dozens in one resolution step.
+
+```csharp
+// GOOD — pooled, SetActive(false) on completion instead of Destroy
+private readonly ObjectPool<ProjectileView> _pool;
+
+public ProjectileView Spawn(Vector3 position)
+{
+    ProjectileView projectile = _pool.Get();
+    projectile.transform.position = position;
+    return projectile;
+}
+
+public void Despawn(ProjectileView projectile) => _pool.Release(projectile);
+```
+
+Use Unity's built-in `UnityEngine.Pool.ObjectPool<T>` — no custom pooling framework needed.
+
+## Pathfinding (MANDATORY: A* or equivalent)
+
+Grid pathfinding uses A* (or an equivalent informed search) — never brute-force/flood-fill without a priority queue, and never a full grid recompute per query. Flag any naive implementation (e.g. BFS with no heuristic on a grid large enough to matter, or repathing every unit every frame) for replacement.
+
+Outside VFX/projectile pooling and pathfinding, this project favors readability over micro-optimization — these two are the named hot paths, not a license to over-optimize everything else.
+
 ## Rendering & Draw Calls (NON-NEGOTIABLE)
 
 **Draw call budget matters as much as GC.** The architect MUST plan rendering optimization from the start — not as an afterthought.

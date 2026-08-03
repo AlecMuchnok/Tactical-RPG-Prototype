@@ -63,15 +63,17 @@ Not-tested: none
 
 ### Cross-system refactor
 ```
-Migrate score tracking from static class to bootstrap-created System
+Migrate score tracking from static class to service-located System
 
-ScoreManager was a static singleton — replaced with ScoreSystem,
-created in BattleBootstrap.Awake and disposed in OnDestroy. All 4
-consumers updated to receive it via Init(...).
+ScoreManager was a static singleton — replaced with a ScoreSystem
+MonoBehaviour that registers with ServiceLocator in Awake and
+unregisters in OnDestroy. All 4 consumers updated to fetch it via
+ServiceLocator.Get<ScoreSystem>() in Start (not Awake — registration
+order isn't guaranteed).
 
 Scope-risk: high
-Constraint: no-singletons — the scene bootstrap is the only wiring point
-Rejected: SO-based-score-channel — adds complexity for simple int tracking
+Constraint: no static Instance singletons — ServiceLocator is the only registry
+Rejected: direct UI reference to ScoreSystem — score display goes through a Presenter + SO event channel instead
 Not-tested: score persistence across scene transitions
 ```
 

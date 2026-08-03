@@ -32,7 +32,7 @@ Run through these checks on the target files:
 
 ### Architecture
 - [ ] Classes are `sealed` unless inheritance is explicitly designed
-- [ ] No singletons (create it in the scene bootstrap and pass it in via Init)
+- [ ] No static `Instance` singletons — shared systems register with `ServiceLocator`; siblings use `GetComponent`
 - [ ] Prefer `async Awaitable` over `StartCoroutine` / `IEnumerator` for new code
 - [ ] Private fields use `_lowerCamelCase` naming
 - [ ] Explicit access modifiers on everything

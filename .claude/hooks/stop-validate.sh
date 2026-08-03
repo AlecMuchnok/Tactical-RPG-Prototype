@@ -71,7 +71,7 @@ while IFS= read -r FILE; do
 
     # Check for singleton pattern
     if grep -qE 'static\s+\w+\s+[Ii]nstance\b' "$FILE" 2>/dev/null; then
-        FILE_ISSUES="${FILE_ISSUES}    Architecture: Singleton pattern detected — create it in the scene bootstrap and pass it in via Init(...)\n"
+        FILE_ISSUES="${FILE_ISSUES}    Architecture: Singleton pattern detected — register with ServiceLocator instead of a static Instance\n"
     fi
 
     # Check for public fields (should be [SerializeField] private)

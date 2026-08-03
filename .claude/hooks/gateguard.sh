@@ -5,11 +5,11 @@
 #
 #   Stage 1 (DENY):  Block first Edit/Write on a C# file. Force investigation.
 #   Stage 2 (FORCE): Emit Unity-specific fact demands (callers, GUID refs,
-#                    FormerlySerializedAs plan, instruction quote, MVS layer).
+#                    FormerlySerializedAs plan, instruction quote, folder role).
 #   Stage 3 (ALLOW): Second attempt on same file proceeds (presumes the agent
 #                    read the deny message and gathered facts).
 #
-# Also enforces Read-before-Edit and the MVS counterpart heuristic.
+# Also enforces Read-before-Edit and the View <-> Presenter counterpart heuristic.
 # ============================================================================
 # Trigger: PreToolUse on Edit|Write|MultiEdit
 # Exit:    2 = block, 0 = allow
@@ -74,14 +74,21 @@ if ! grep -qxF "$FILE_PATH" "$FACTS_PASSED_FILE" 2>/dev/null; then
         echo "$FILE_PATH" >> "$FACTS_DENIED_FILE"
         unity_track_warning "gateguard" "fact-demand: $FILE_PATH"
 
-        # Classify file to tailor the fact demand
+        # Classify file by folder — this architecture doesn't use one fixed
+        # filename-suffix convention (see architecture.md's Folder Structure).
         ROLE=""
-        case "$BASENAME" in
-            *View)   ROLE="View (MVS)" ;;
-            *System) ROLE="System (MVS)" ;;
-            *Model)  ROLE="Model (MVS)" ;;
-            *Config|*Definition|*Data) ROLE="ScriptableObject" ;;
-            *Controller|*Manager|*Handler) ROLE="Behaviour" ;;
+        case "$DIR" in
+            */Components*)              ROLE="Component (sibling-composed on a unit)" ;;
+            */Systems*)                 ROLE="System (service-locator registered)" ;;
+            */Services*)                ROLE="Service infrastructure (e.g. ServiceLocator itself)" ;;
+            */EventChannels*)           ROLE="SO Event Channel" ;;
+            */StateMachines*)           ROLE="State machine / state" ;;
+            */Commands*)                ROLE="Command (ICommand)" ;;
+            */Data*)                    ROLE="ScriptableObject data definition" ;;
+            */UI/Views*)                ROLE="UI View (no gameplay references allowed)" ;;
+            */UI/Presenters*)           ROLE="UI Presenter (mediates View <-> gameplay)" ;;
+            */Input*)                   ROLE="Input adapter" ;;
+            */Utility*)                 ROLE="Pure utility (no Unity lifecycle)" ;;
         esac
 
         echo "" >&2
@@ -95,13 +102,16 @@ if ! grep -qxF "$FILE_PATH" "$FACTS_PASSED_FILE" 2>/dev/null; then
             echo "  1. Name the file(s) and line(s) that will reference this new type." >&2
             echo "  2. Confirm no existing type serves the same purpose." >&2
             echo "     Run: grep -rn 'class ${BASENAME}' Assets/" >&2
-            echo "  3. State which layer this belongs to (Model / System / View) and" >&2
-            echo "     confirm the filename suffix matches — the architecture validator" >&2
-            echo "     classifies files by suffix, not by content." >&2
-            echo "  4. If it's a System, name the scene bootstrap that will create it" >&2
-            echo "     and where it gets disposed. If it's a View/MonoBehaviour, name" >&2
-            echo "     the bootstrap that calls its Init(...) and the scene/prefab" >&2
-            echo "     that hosts it." >&2
+            echo "  3. Confirm which folder this lives in (Components / Systems /" >&2
+            echo "     EventChannels / StateMachines / Commands / Data / UI/Views /" >&2
+            echo "     UI/Presenters / Input / Utility) — the architecture validator" >&2
+            echo "     classifies files by folder, not filename suffix." >&2
+            echo "  4. If it's a System, confirm it registers itself with" >&2
+            echo "     ServiceLocator.Register<T>() in Awake and unregisters in" >&2
+            echo "     OnDestroy. If it's a Component, confirm sibling access goes" >&2
+            echo "     through GetComponent (not the locator) and name the" >&2
+            echo "     GameObject/prefab it will live on. If it's a UI View, confirm" >&2
+            echo "     it holds no gameplay type — only a Presenter may." >&2
             echo "  5. Quote the user's current instruction verbatim." >&2
         else
             echo "  File: $FILE_PATH" >&2
@@ -127,34 +137,24 @@ if ! grep -qxF "$FILE_PATH" "$FACTS_PASSED_FILE" 2>/dev/null; then
     fi
 fi
 
-# --- Guard 3: MVS counterpart heuristic (advisory, does not block) ---
-check_counterpart() {
-    local suffix="$1"
-    local role="$2"
-    local base="${BASENAME%View}"
-    base="${base%System}"
-    base="${base%Model}"
-    local counterpart_name="${base}${suffix}"
-
-    for search_dir in "$DIR" "$(dirname "$DIR")"; do
-        local candidate
-        candidate=$(find "$search_dir" -maxdepth 3 -name "${counterpart_name}.cs" 2>/dev/null | head -1)
-        if [ -n "$candidate" ] && [ -f "$candidate" ]; then
-            if ! unity_was_read "$candidate"; then
-                echo "  SUGGESTION: Consider reading the ${role} first: ${candidate}" >&2
-            fi
-            return
+# --- Guard 3: View <-> Presenter counterpart heuristic (advisory, does not block) ---
+# The one fixed 1:1 pairing left in this architecture (see architecture.md §5,
+# MVP for UI). Components/Systems/EventChannels don't have an equivalent fixed
+# counterpart, so there's nothing to check for them.
+case "$DIR" in
+    */UI/Views*)
+        counterpart_name="${BASENAME%View}Presenter"
+        candidate=$(find "$(dirname "$DIR")" -maxdepth 3 -name "${counterpart_name}.cs" 2>/dev/null | head -1)
+        if [ -n "$candidate" ] && [ -f "$candidate" ] && ! unity_was_read "$candidate"; then
+            echo "  SUGGESTION: Consider reading the Presenter first: ${candidate}" >&2
         fi
-    done
-}
-
-case "$BASENAME" in
-    *View)
-        check_counterpart "Model" "Model"
-        check_counterpart "System" "System"
         ;;
-    *System)
-        check_counterpart "Model" "Model"
+    */UI/Presenters*)
+        counterpart_name="${BASENAME%Presenter}View"
+        candidate=$(find "$(dirname "$DIR")" -maxdepth 3 -name "${counterpart_name}.cs" 2>/dev/null | head -1)
+        if [ -n "$candidate" ] && [ -f "$candidate" ] && ! unity_was_read "$candidate"; then
+            echo "  SUGGESTION: Consider reading the View first: ${candidate}" >&2
+        fi
         ;;
 esac
 

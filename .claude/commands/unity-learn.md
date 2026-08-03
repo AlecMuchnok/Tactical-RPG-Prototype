@@ -65,7 +65,7 @@ Analyze the learnings log for recurring patterns and apply confidence scoring:
    - Files that appear across multiple sessions → likely hotspots
    - Categories that dominate → project's current focus area
    - Tool usage patterns → workflow optimization opportunities
-   - MVS balance → are Models, Views, and Systems equally maintained?
+   - Layer balance → are Components, Systems, and UI Presenters equally maintained?
 4. **Apply confidence scoring:**
    - **High confidence** (3+ sessions): Pattern is well-established, likely a real project convention
    - **Medium confidence** (2 sessions): Pattern is emerging, worth noting but may be coincidental
