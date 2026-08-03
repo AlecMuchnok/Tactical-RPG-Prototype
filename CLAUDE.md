@@ -54,3 +54,7 @@ This project is driven through the Unity Editor via the UnityMCP tool integratio
 - Console output/errors — `mcp__UnityMCP__read_console`
 
 Check `mcpforunity://custom-tools` for any project-specific MCP tools before assuming a capability doesn't exist.
+
+### Model Selection for Feature Work
+
+**Plan on Opus, implement on Sonnet.** Requirements-gathering and the implementation plan (`/unity-interview`; Phases 1-2 of `/unity-workflow`; Phase 1 of `/unity-feature`) run on Opus — a wrong approach is expensive to unwind, so it's worth the frontier reasoning. Once a plan is approved, implementation (`unity-coder`, `unity-verifier`) is mechanical enough for Sonnet — both agents are already pinned to `model: sonnet` in their frontmatter. If you're driving one of these commands interactively rather than letting it delegate to a subagent, switch models yourself with `/model` at the plan→implement boundary; a command has no way to force the interactive session's model.

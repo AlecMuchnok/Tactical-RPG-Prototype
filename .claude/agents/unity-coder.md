@@ -1,7 +1,7 @@
 ---
 name: unity-coder
 description: "Implements Unity features — gameplay systems, components, managers. Identifies required subsystems, writes C# scripts placed in the correct rules/architecture.md folder, then uses MCP to create GameObjects and attach scripts."
-model: opus
+model: sonnet
 color: green
 tools: Read, Write, Edit, Glob, Grep, Bash, Agent, mcp__UnityMCP__*
 ---

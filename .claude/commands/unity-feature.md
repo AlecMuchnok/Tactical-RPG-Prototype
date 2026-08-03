@@ -11,7 +11,9 @@ Plan and implement the feature described by the user: **$ARGUMENTS**
 
 ## Agent Routing
 
-Use the `unity-coder` agent (opus — full architectural reasoning) for all features regardless of size; a small feature just gets a shorter plan in Phase 1.
+Use the `unity-coder` agent (Sonnet) for all features regardless of size; a small feature just gets a shorter plan in Phase 1.
+
+**Model tier:** Phase 1 (Plan) is judgment work — if driving this interactively, stay on **Opus** through the plan being presented and approved. Phase 2 (Implement) delegates to `unity-coder`, which runs on **Sonnet**; switch the interactive session to Sonnet too once Phase 2 starts, since there's no more approach-level judgment left to make.
 
 ## Phase 0: Sync
 
@@ -57,7 +59,7 @@ Before planning, sync with `main` (see `git-workflow.md`): `git checkout main &&
 
 ## Phase 4: Auto-Verify (Optional)
 
-After implementation, offer to run the `unity-verifier` agent for a verify-fix loop:
+After implementation, offer to run the `unity-verifier` agent (Sonnet) for a verify-fix loop:
 - Reviews all changed files for serialization safety, performance, and Unity-specific pitfalls
 - Auto-fixes safe issues (missing FormerlySerializedAs, CompareTag, cached GetComponent, etc.)
 - Re-verifies up to 3 iterations until clean

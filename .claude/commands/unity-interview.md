@@ -11,6 +11,8 @@ Conduct a thorough, multi-phase requirements interview for: **$ARGUMENTS**
 
 This command produces a comprehensive feature brief BEFORE any code is written. It is deliberately more thorough than the quick clarify phase in `/unity-workflow` — use this for large or ambiguous features where getting requirements right is critical.
 
+**Model tier:** this whole command is planning — stay on **Opus** throughout. Implementation happens afterward via `/unity-workflow` or `/unity-feature`, which switch to Sonnet at their own Execute/Implement phase.
+
 ## Phase 0: Sync
 
 Before exploring scope, sync with `main` (see `git-workflow.md`): `git checkout main && git pull origin main`. Skip if the working tree isn't clean — surface that to the user instead of pulling over it. (This command produces no code itself — see "Keep code out" below — so no branch is needed here; implementation happens later via `/unity-workflow` or `/unity-feature`, which create one.)
