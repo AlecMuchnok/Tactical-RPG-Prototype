@@ -4,7 +4,7 @@
 
 ## 1. Pull `main` before planning a new feature
 
-Before starting requirements-gathering or a plan for new work (`/unity-workflow`, `/unity-feature`, `/unity-interview`, or any ad hoc "let's build X"), run:
+Before starting requirements-gathering or a plan for new work (`/unity-feature`, `/unity-review`, or any ad hoc "let's build X"), run:
 
 ```bash
 git checkout main

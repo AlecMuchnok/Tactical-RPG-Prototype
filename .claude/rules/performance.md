@@ -87,7 +87,7 @@ Outside VFX/projectile pooling and pathfinding, this project favors readability 
 
 ## Rendering & Draw Calls (NON-NEGOTIABLE)
 
-**Draw call budget matters as much as GC.** The architect MUST plan rendering optimization from the start — not as an afterthought.
+**Draw call budget matters as much as GC.** The plan MUST cover rendering optimization from the start — not as an afterthought.
 
 ### Frame Budget (desktop + console)
 
@@ -118,7 +118,7 @@ SpriteAtlas "CardAtlas" containing all 52 cards + backs + UI elements
 - Group by rendering layer: one atlas per logical group (cards, UI icons, environment tiles)
 - Max atlas size: 4096x4096. Pick the smallest power of two the sprites actually fit in — a half-empty 4096 atlas wastes 64MB of VRAM for nothing.
 - Enable "Tight Packing" and "Allow Rotation" for optimal packing
-- The architect MUST specify atlas grouping in the TDD
+- The plan MUST specify atlas grouping
 
 ### Material Sharing
 
@@ -162,7 +162,7 @@ public void SetColor(Color color)
 - **3D**: Enable GPU Instancing on materials for repeated meshes (trees, props, enemies)
 - **Static objects**: Mark as "Batching Static" in inspector for static batching
 - **Dynamic batching**: leave it off. It's a low-end-mobile optimization that costs CPU to merge meshes on the fly, and URP's SRP Batcher supersedes it. For 2D, sprites batch by atlas + material automatically — that's the lever that matters here.
-- The architect MUST specify batching strategy in the TDD
+- The plan MUST specify batching strategy
 
 ### UI Canvas Optimization
 
@@ -200,9 +200,9 @@ Canvas_Popups (dynamic elements)
 - Use culling layers to exclude objects from cameras that don't need them
 - For 2D: use `Sorting Layers` and `Order in Layer` — not Z-position hacks
 
-### Architect Responsibility
+### Planning Responsibility
 
-The TDD MUST include a **Rendering Strategy** section covering:
+The plan MUST include a **Rendering Strategy** section covering:
 1. How draw calls will be minimized (aim for the lowest count possible)
 2. Atlas plan (which sprites go in which atlases)
 3. Material sharing strategy
@@ -219,8 +219,8 @@ Agents cannot always create Unity assets directly (sprite atlases, material pres
 1. **Do NOT silently skip it.** If the game needs a sprite atlas and the agent can't create one, the agent MUST stop and tell the developer.
 2. **Generate clear, step-by-step instructions** for the developer to follow in the Unity Editor. Be specific: which menu, which settings, which assets to include.
 3. **Block progress on dependent work.** Do not write code that references an atlas or shared material that doesn't exist yet. Guide the developer to create the asset first, then continue.
-4. **The architect includes a "Developer Setup Steps" section** in the TDD listing all manual optimization work the developer must do before or during implementation.
-5. **The reviewer checks that these steps were completed.** If sprite atlases were planned but don't exist, the review FAILS with instructions for the developer.
+4. **The plan includes a "Developer Setup Steps" section** listing all manual optimization work the developer must do before or during implementation.
+5. **The review pass checks that these steps were completed.** If sprite atlases were planned but don't exist, the review FAILS with instructions for the developer.
 
 Example guidance format:
 ```

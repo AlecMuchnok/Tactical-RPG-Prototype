@@ -105,3 +105,24 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# --- Claude Code ---
+# Machine-local overrides — never in the remote
+.claude/settings.local.json
+.claude/*.local.json
+CLAUDE.local.md
+.mcp.local.json
+
+# Per-user session artifacts, plus the annotatable plan files the
+# unity-feature/unity-review skills write to .claude/plans/
+.claude/plans/
+.claude/todos/
+.claude/memory/
+.claude/history.jsonl
+.claude/shell-snapshots/
+.claude/statsig/
+.claude/projects/
+.claude/ide/
+.claude/logs/
+.claude/debug/
+.claude/.DS_Store

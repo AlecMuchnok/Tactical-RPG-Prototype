@@ -50,11 +50,11 @@ Detailed, enforced rules live in `.claude/rules/`. Read the relevant file before
 This project is driven through the Unity Editor via the UnityMCP tool integration — there is no separate CLI build or test command yet. Use MCP tools/agents for:
 
 - Editor state, GameObjects, scenes, and assets — `mcp__UnityMCP__*` tools
-- Running tests, once a test assembly exists — `mcp__UnityMCP__run_tests` (no tests exist yet, and writing them is currently out of scope for the `.claude/` toolkit — see `/unity-workflow`, `/unity-feature`, `/unity-review`, `/unity-fix`, `/unity-scene`, `/unity-interview` for what's supported)
+- Running tests, once a test assembly exists — `mcp__UnityMCP__run_tests` (no tests exist yet, and writing them is currently out of scope for the `.claude/` toolkit — see [unity-feature](.claude/skills/unity-feature/SKILL.md) and [unity-review](.claude/skills/unity-review/SKILL.md) for what's supported)
 - Console output/errors — `mcp__UnityMCP__read_console`
 
 Check `mcpforunity://custom-tools` for any project-specific MCP tools before assuming a capability doesn't exist.
 
 ### Model Selection for Feature Work
 
-**Plan on Opus, implement on Sonnet.** Requirements-gathering and the implementation plan (`/unity-interview`; Phases 1-2 of `/unity-workflow`; Phase 1 of `/unity-feature`) run on Opus — a wrong approach is expensive to unwind, so it's worth the frontier reasoning. Once a plan is approved, implementation (`unity-coder`, `unity-verifier`) is mechanical enough for Sonnet — both agents are already pinned to `model: sonnet` in their frontmatter. If you're driving one of these commands interactively rather than letting it delegate to a subagent, switch models yourself with `/model` at the plan→implement boundary; a command has no way to force the interactive session's model.
+**Plan on Opus, implement on Sonnet.** The `unity-feature` and `unity-review` skills both write an approval-gated plan file first and only implement after you approve it. There's no agent frontmatter to pin the model anymore, so switching with `/model` at the plan→implement boundary is the only mechanism — both skills state the switch explicitly when they reach it. A wrong approach is expensive to unwind, so planning stays on the frontier tier; implementing an already-approved plan is mechanical enough for Sonnet.

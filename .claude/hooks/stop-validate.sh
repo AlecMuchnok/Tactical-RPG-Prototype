@@ -46,13 +46,6 @@ while IFS= read -r FILE; do
         fi
     fi
 
-    # Check for missing FormerlySerializedAs (serialized field without it)
-    # This is a heuristic — look for [SerializeField] fields that have common "renamed" patterns
-    SERIALIZE_FIELDS=$(grep -c '\[SerializeField\]' "$FILE" 2>/dev/null || true)
-    FORMERLY_ATTRS=$(grep -c 'FormerlySerializedAs' "$FILE" 2>/dev/null || true)
-    # Not a perfect check, but flag files with many serialized fields and zero FormerlySerializedAs
-    # (this is informational, not an error)
-
     # Check for ?. on Unity objects in full file
     NULL_COND=$(grep -nE '\?\.(enabled|transform|gameObject|name|tag|activeSelf|activeInHierarchy)' "$FILE" 2>/dev/null || true)
     if [ -n "$NULL_COND" ]; then
@@ -94,11 +87,5 @@ else
 fi
 
 echo "-------------------------------" >&2
-
-# Write verify_fail event for notification system
-if [ "$ISSUES" -gt 0 ] 2>/dev/null; then
-    jq -nc --arg event "verify_fail" --arg details "$ISSUES file(s) with issues" \
-        '{event: $event, details: $details}' > "$UNITY_HOOK_STATE_DIR/notify-event.json" 2>/dev/null || true
-fi
 
 exit 0

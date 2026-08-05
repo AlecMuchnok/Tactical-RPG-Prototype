@@ -5,8 +5,8 @@
 # while `main`/`master` is checked out, so that rejection is caught locally
 # at commit time instead of at push time (or worse, several commits later).
 #
-# No two-stage "deny then allow on retry" here, unlike gateguard/bash-gate —
-# the fix is a single unambiguous command (git checkout -b ...), not a
+# No two-stage "deny then allow on retry" here, unlike gateguard.sh — the
+# fix is a single unambiguous command (git checkout -b ...), not a
 # judgment call that benefits from a facts-first retry.
 # ============================================================================
 # Trigger: PreToolUse on Bash
