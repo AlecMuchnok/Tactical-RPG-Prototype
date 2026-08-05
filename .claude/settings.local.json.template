@@ -1,15 +1,19 @@
 {
   "// INSTRUCTIONS": "Copy this file to settings.local.json and customize. This file is git-ignored.",
   "permissions": {
-    "defaultMode": "allowEdits"
+    "defaultMode": "acceptEdits"
   },
   "env": {
-    "// UNITY_PROJECT_DIR": "Override if your Unity project is in a subdirectory",
-    "// MCP_PORT": "Override unity-mcp port (default: 8080)",
-    "// DISABLE_UNITY_HOOKS": "Set to 1 to bypass ALL safety hooks",
-    "// UNITY_HOOK_MODE": "Set to 'warn' to downgrade blocking hooks to warnings",
-    "// DISABLE_HOOK_BLOCK_LEGACY_INPUT": "Set to 1 to disable the legacy Input.* blocker",
-    "// DISABLE_HOOK_GATEGUARD": "Set to 1 to disable the Read-before-Edit + fact-demand gate if it proves too disruptive",
-    "// DISABLE_HOOK_REQUIRE_FEATURE_BRANCH": "Set to 1 to allow committing directly on main/master (see git-workflow.md)"
+    "// DISABLE_UNITY_HOOKS": "Set to 1 to bypass ALL hooks",
+    "// UNITY_HOOK_MODE": "Set to 'warn' to downgrade every blocking hook to an advisory message instead of a deny",
+    "// DISABLE_HOOK_PROTECT_UNITY_ASSETS": "Set to 1 to allow hand-editing .meta/.unity/.prefab/.asset/etc and Library/Temp/ProjectSettings",
+    "// DISABLE_HOOK_GUARD_SERIALIZED_RENAME": "Set to 1 to disable the [FormerlySerializedAs] rename guard",
+    "// DISABLE_HOOK_GUARD_BUILD_BREAKERS": "Set to 1 to disable the UnityEditor-guard/legacy-Input/async-void/mobile-define blocker",
+    "// DISABLE_HOOK_GUARD_DESTRUCTIVE_COMMANDS": "Set to 1 to allow git reset --hard, clean -fd, push --force, commits on main, etc",
+    "// DISABLE_HOOK_CHECK_META_PAIRING": "Set to 1 to allow committing an asset without its .meta (or vice versa)",
+    "// DISABLE_HOOK_LINT_CSHARP_RULES": "Set to 1 to silence the post-edit rules-file lint warnings",
+    "// DISABLE_HOOK_SESSION_CONTEXT": "Set to 1 to skip the SessionStart branch/Unity/MCP status banner",
+    "// DISABLE_HOOK_CHECK_UNITY_CONSOLE": "Set to 1 to let a turn end even with C# compile errors present",
+    "// DISABLE_HOOK_SESSION_CLEANUP": "Set to 1 to keep .claude/state/ files after the session ends"
   }
 }

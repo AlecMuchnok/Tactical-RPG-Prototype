@@ -1,123 +1,168 @@
 #!/usr/bin/env bash
-# ============================================================================
-# _lib.sh — Shared hook library (sourced, not executed)
-# Provides kill switches, hook profiles, and shared utilities for all hooks.
-#
-# Environment variables:
-#   DISABLE_UNITY_HOOKS=1          — bypass ALL hooks (exit 0 immediately)
-#   DISABLE_HOOK_<NAME>=1          — bypass a specific hook (name uppercased, hyphens→underscores)
-#   UNITY_HOOK_MODE=warn           — downgrade blocking hooks to warnings (exit 0 instead of 2)
-#   UNITY_HOOK_PROFILE=standard    — hook profile: minimal|standard|strict (default: standard)
-#
-# Hook profiles control which hooks are active:
-#   minimal  — only the legacy-input and feature-branch blockers
-#   standard — safety + quality warnings, including gateguard (default)
-#   strict   — reserved for hooks that opt into a stricter tier than standard
-#
-# Usage in hook scripts (add after set -euo pipefail):
-#   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-#   HOOK_PROFILE_LEVEL="standard"   # minimal|standard|strict
-#   source "${SCRIPT_DIR}/_lib.sh"
-# ============================================================================
+# Shared helpers for .claude/hooks/*.sh — sourced, never executed directly.
+# Kill switches (checked by hooklib::guard_deny / hooklib::advise):
+#   DISABLE_UNITY_HOOKS=1        disables every hook
+#   UNITY_HOOK_MODE=warn         downgrades every blocking hook to advisory
+#   DISABLE_HOOK_<NAME>=1        disables one hook, e.g. DISABLE_HOOK_PROTECT_UNITY_ASSETS
 
-# --- Profile levels (numeric for comparison) ---
-_profile_to_num() {
-    case "$1" in
-        minimal)  echo 1 ;;
-        standard) echo 2 ;;
-        strict)   echo 3 ;;
-        *)        echo 2 ;; # default to standard
+set -euo pipefail
+
+hooklib::project_dir() {
+    # CLAUDE_PROJECT_DIR is set by the harness; fall back for standalone testing.
+    if [[ -n "${CLAUDE_PROJECT_DIR:-}" ]]; then
+        printf '%s' "$CLAUDE_PROJECT_DIR"
+    elif git rev-parse --show-toplevel >/dev/null 2>&1; then
+        git rev-parse --show-toplevel
+    else
+        pwd
+    fi
+}
+
+hooklib::state_dir() {
+    local dir
+    dir="$(hooklib::project_dir)/.claude/state"
+    mkdir -p "$dir"
+    printf '%s' "$dir"
+}
+
+# Reads stdin once into $INPUT_JSON. Call at the top of every hook's main flow.
+hooklib::read_input() {
+    INPUT_JSON="$(cat)"
+}
+
+# hooklib::field '<jq filter>' — extract a field from $INPUT_JSON, empty string if absent/null.
+hooklib::field() {
+    jq -r "$1 // empty" <<<"$INPUT_JSON" 2>/dev/null || true
+}
+
+# hooklib::is_disabled <HOOK_NAME> — true if DISABLE_UNITY_HOOKS or DISABLE_HOOK_<NAME> is set.
+hooklib::is_disabled() {
+    local hook_name="$1"
+    local disable_var="DISABLE_HOOK_${hook_name}"
+    [[ "${DISABLE_UNITY_HOOKS:-0}" == "1" ]] && return 0
+    [[ "${!disable_var:-0}" == "1" ]] && return 0
+    return 1
+}
+
+hooklib::is_warn_mode() {
+    [[ "${UNITY_HOOK_MODE:-}" == "warn" ]]
+}
+
+# hooklib::emit_deny <reason> — PreToolUse deny JSON, then exit 0 (JSON, not exit code, carries the decision).
+hooklib::emit_deny() {
+    local reason="$1"
+    jq -n --arg reason "$reason" \
+        '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: $reason}}' \
+        || true
+    exit 0
+}
+
+# hooklib::emit_allow_with_warning <reason> — allow, but surface the reason as a system message.
+hooklib::emit_allow_with_warning() {
+    local reason="$1"
+    jq -n --arg reason "$reason" \
+        '{systemMessage: $reason, hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "allow", permissionDecisionReason: $reason}}' \
+        || true
+    exit 0
+}
+
+# hooklib::guard_deny <HOOK_NAME> <reason> — the entry point every PreToolUse blocking hook calls
+# once it has decided to deny. Honors kill switches and the warn-mode downgrade.
+hooklib::guard_deny() {
+    local hook_name="$1"
+    local reason="$2"
+    if hooklib::is_disabled "$hook_name"; then
+        exit 0
+    fi
+    if hooklib::is_warn_mode; then
+        hooklib::emit_allow_with_warning "$reason"
+    fi
+    hooklib::emit_deny "$reason"
+}
+
+# hooklib::advise <HOOK_NAME> <message> — the entry point PostToolUse advisory hooks call.
+# Exit 2 feeds stderr back to Claude without blocking anything (PostToolUse can't block).
+hooklib::advise() {
+    local hook_name="$1"
+    local message="$2"
+    if hooklib::is_disabled "$hook_name"; then
+        exit 0
+    fi
+    printf '%s\n' "$message" >&2
+    exit 2
+}
+
+# --- path classification -----------------------------------------------
+# Normalize backslashes to forward slashes so checks work regardless of
+# whether the harness reports Windows-native or POSIX-style paths.
+hooklib::normalize_path() {
+    printf '%s' "$1" | tr '\\' '/'
+}
+
+hooklib::is_unity_yaml_asset() {
+    local path
+    path="$(hooklib::normalize_path "$1")"
+    case "$path" in
+        *.meta|*.unity|*.prefab|*.asset|*.controller|*.inputactions|*.spriteatlas)
+            return 0 ;;
+        *)
+            return 1 ;;
     esac
 }
 
-_ACTIVE_PROFILE="${UNITY_HOOK_PROFILE:-standard}"
-_ACTIVE_PROFILE_NUM=$(_profile_to_num "$_ACTIVE_PROFILE")
-
-# If the hook declared a required profile level, check it
-if [ -n "${HOOK_PROFILE_LEVEL:-}" ]; then
-    _REQUIRED_NUM=$(_profile_to_num "$HOOK_PROFILE_LEVEL")
-    if [ "$_REQUIRED_NUM" -gt "$_ACTIVE_PROFILE_NUM" ]; then
-        exit 0  # hook's profile level exceeds active profile — skip silently
-    fi
-fi
-
-# Global kill switch — disable all hooks
-if [ "${DISABLE_UNITY_HOOKS:-}" = "1" ]; then
-    exit 0
-fi
-
-# Per-hook kill switch — derive hook name from caller's filename
-_HOOK_BASENAME="$(basename "${BASH_SOURCE[1]}" .sh)"
-_HOOK_ENV_NAME="DISABLE_HOOK_$(echo "$_HOOK_BASENAME" | tr '[:lower:]-' '[:upper:]_')"
-
-if [ "${!_HOOK_ENV_NAME:-}" = "1" ]; then
-    exit 0
-fi
-
-# --- Shared paths ---
-# Resolve project-local state directory, falling back to /tmp
-_resolve_state_dir() {
-    local git_root
-    git_root="$(git rev-parse --show-toplevel 2>/dev/null)" || true
-    if [ -n "$git_root" ] && [ -d "$git_root/.claude/state" ]; then
-        echo "$git_root/.claude/state"
-    else
-        echo "/tmp/unity-claude-hooks"
-    fi
-}
-# Honor pre-set UNITY_HOOK_STATE_DIR (for tests and explicit overrides)
-if [ -z "${UNITY_HOOK_STATE_DIR:-}" ]; then
-    UNITY_HOOK_STATE_DIR="$(_resolve_state_dir)"
-fi
-mkdir -p "$UNITY_HOOK_STATE_DIR"
-
-UNITY_READS_FILE="${UNITY_HOOK_STATE_DIR}/gateguard-reads.txt"
-UNITY_EDITS_FILE="${UNITY_HOOK_STATE_DIR}/session-edits.txt"
-UNITY_WARNINGS_FILE="${UNITY_HOOK_STATE_DIR}/session-warnings.txt"
-
-# --- Shared utilities ---
-
-# unity_hook_block — use instead of exit 2 in blocking hooks
-# If UNITY_HOOK_MODE=warn, prints the message as a warning and exits 0
-# Otherwise, prints the message and exits 2 (blocking)
-unity_hook_block() {
-    local message="$1"
-    if [ "${UNITY_HOOK_MODE:-}" = "warn" ]; then
-        echo "WARNING (downgraded from BLOCKED): $message" >&2
-        exit 0
-    else
-        echo "BLOCKED: $message" >&2
-        exit 2
-    fi
+hooklib::is_unity_managed_dir() {
+    local path
+    path="$(hooklib::normalize_path "$1")"
+    case "$path" in
+        */ProjectSettings/*|ProjectSettings/*|*/Library/*|Library/*|*/Temp/*|Temp/*|*/Logs/*|Logs/*|*/obj/*|obj/*|*/Build/*|Build/*|*/Builds/*|Builds/*|*/UserSettings/*|UserSettings/*)
+            return 0 ;;
+        *packages-lock.json)
+            return 0 ;;
+        *)
+            return 1 ;;
+    esac
 }
 
-# unity_track_edit — record a file edit for session tracking
-unity_track_edit() {
-    local file_path="$1"
-    if [ -n "$file_path" ]; then
-        echo "$file_path" >> "$UNITY_EDITS_FILE"
-    fi
+hooklib::is_editor_folder_path() {
+    local path
+    path="$(hooklib::normalize_path "$1")"
+    case "$path" in
+        */Editor/*|Editor/*)
+            return 0 ;;
+        *)
+            return 1 ;;
+    esac
 }
 
-# unity_track_read — record a file read for gateguard tracking
-unity_track_read() {
-    local file_path="$1"
-    if [ -n "$file_path" ]; then
-        echo "$file_path" >> "$UNITY_READS_FILE"
+# hooklib::win_to_posix_path <windows-path> — "C:\Users\x\y" -> "/c/Users/x/y".
+# Uses cygpath when available (belt-and-suspenders); falls back to manual sed.
+hooklib::win_to_posix_path() {
+    local win_path="$1"
+    if command -v cygpath >/dev/null 2>&1; then
+        cygpath -u "$win_path" 2>/dev/null && return 0
     fi
+    local posix_path drive
+    posix_path="$(printf '%s' "$win_path" | sed -E 's#\\#/#g')"
+    drive="$(printf '%s' "$posix_path" | cut -c1 | tr 'A-Z' 'a-z')"
+    printf '/%s%s' "$drive" "${posix_path:2}"
 }
 
-# unity_was_read — check if a file was previously read
-unity_was_read() {
-    local file_path="$1"
-    [ -f "$UNITY_READS_FILE" ] && grep -qxF "$file_path" "$UNITY_READS_FILE" 2>/dev/null
+# hooklib::editor_log_path — POSIX path to Unity's Editor.log, or empty if
+# %LOCALAPPDATA% isn't set.
+hooklib::editor_log_path() {
+    if [[ -z "${LOCALAPPDATA:-}" ]]; then
+        return 0
+    fi
+    hooklib::win_to_posix_path "${LOCALAPPDATA}\\Unity\\Editor\\Editor.log"
 }
 
-# unity_track_warning — record a hook warning for session analytics
-unity_track_warning() {
-    local hook_name="$1"
-    local message="$2"
-    if [ -n "$hook_name" ]; then
-        echo "${hook_name}: ${message}" >> "$UNITY_WARNINGS_FILE"
-    fi
+hooklib::is_project_cs() {
+    local path
+    path="$(hooklib::normalize_path "$1")"
+    case "$path" in
+        */Assets/*.cs|Assets/*.cs)
+            return 0 ;;
+        *)
+            return 1 ;;
+    esac
 }
