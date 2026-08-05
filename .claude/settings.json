@@ -10,59 +10,59 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-legacy-input.sh",
+            "command": "bash .claude/hooks/protect-unity-assets.sh",
             "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/gateguard.sh",
-            "timeout": 3000
           }
         ]
       },
       {
-        "matcher": "Bash",
+        "matcher": "Edit",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/require-feature-branch.sh",
-            "timeout": 3000
+            "command": "bash .claude/hooks/guard-serialized-rename.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-build-breakers.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-destructive-commands.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-meta-pairing.sh",
+            "timeout": 8000
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/track-reads.sh",
-            "timeout": 2000
-          }
-        ]
-      },
-      {
         "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/warn-platform-defines.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/quality-gate.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/track-edits.sh",
-            "timeout": 2000
+            "command": "bash .claude/hooks/lint-csharp-rules.sh",
+            "timeout": 8000
           }
         ]
       }
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/session-reset.sh",
+            "command": "bash .claude/hooks/session-context.sh",
             "timeout": 5000
           }
         ]
@@ -85,8 +85,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/stop-validate.sh",
-            "timeout": 15000
+            "command": "bash .claude/hooks/check-unity-console.sh",
+            "timeout": 20000
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-cleanup.sh",
+            "timeout": 5000
           }
         ]
       }
