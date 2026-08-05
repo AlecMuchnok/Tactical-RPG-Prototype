@@ -421,7 +421,7 @@ Assets/
     Units/
 ```
 
-A file's folder is what the hooks use to classify it (`gateguard.sh`, `validate-architecture.sh`) — component/system/view naming doesn't follow one fixed suffix convention the way the old `*Model`/`*System`/`*View` rule did, so put new files in the right folder.
+A file's folder is what the hooks use to classify it (`gateguard.sh`) — component/system/view naming doesn't follow one fixed suffix convention the way the old `*Model`/`*System`/`*View` rule did, so put new files in the right folder.
 
 ---
 

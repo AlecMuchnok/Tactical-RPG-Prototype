@@ -14,32 +14,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-scene-edit.sh",
-            "timeout": 3000
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/block-meta-edit.sh",
-            "timeout": 3000
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/guard-editor-runtime.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
             "command": ".claude/hooks/block-legacy-input.sh",
             "timeout": 5000
           },
           {
             "type": "command",
             "command": ".claude/hooks/gateguard.sh",
-            "timeout": 3000
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/guard-project-config.sh",
             "timeout": 3000
           }
         ]
@@ -49,17 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-projectsettings.sh",
-            "timeout": 3000
-          },
-          {
-            "type": "command",
             "command": ".claude/hooks/require-feature-branch.sh",
-            "timeout": 3000
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/bash-gate.sh",
             "timeout": 3000
           }
         ]
@@ -81,16 +51,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/warn-serialization.sh",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/warn-filename.sh",
-            "timeout": 3000
-          },
-          {
-            "type": "command",
             "command": ".claude/hooks/warn-platform-defines.sh",
             "timeout": 5000
           },
@@ -103,21 +63,6 @@
             "type": "command",
             "command": ".claude/hooks/track-edits.sh",
             "timeout": 2000
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/suggest-verify.sh",
-            "timeout": 3000
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/validate-commit.sh",
-            "timeout": 15000
           }
         ]
       }

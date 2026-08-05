@@ -106,8 +106,8 @@ if ! grep -qxF "$FILE_PATH" "$FACTS_PASSED_FILE" 2>/dev/null; then
             echo "     Run: grep -rn 'class ${BASENAME}' Assets/" >&2
             echo "  3. Confirm which folder this lives in (Components / Systems /" >&2
             echo "     EventChannels / StateMachines / Commands / Data / UI/Views /" >&2
-            echo "     UI/Presenters / Input / Utility) — the architecture validator" >&2
-            echo "     classifies files by folder, not filename suffix." >&2
+            echo "     UI/Presenters / Input / Utility) — architecture.md's Folder" >&2
+            echo "     Structure classifies files by folder, not filename suffix." >&2
             echo "  4. If it's a System, confirm it registers itself with" >&2
             echo "     ServiceLocator.Register<T>() in Awake and unregisters in" >&2
             echo "     OnDestroy. If it's a Component, confirm sibling access goes" >&2

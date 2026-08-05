@@ -3,8 +3,6 @@
 # track-edits.sh — TRACKING HOOK (standard profile)
 # Records files that have been edited during this session. Used by:
 #   - stop-validate.sh (runs validation on modified files)
-#   - session-save.sh (persists session state)
-#   - cost-tracker.sh (session metrics)
 # ============================================================================
 # Trigger: PostToolUse on Edit|Write
 # Exit: 0 always (tracking only)

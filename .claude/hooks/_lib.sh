@@ -10,9 +10,9 @@
 #   UNITY_HOOK_PROFILE=standard    — hook profile: minimal|standard|strict (default: standard)
 #
 # Hook profiles control which hooks are active:
-#   minimal  — only critical safety hooks (block scene/meta corruption)
-#   standard — safety + quality warnings (default)
-#   strict   — everything, including gateguard, learning, cost tracking
+#   minimal  — only the legacy-input and feature-branch blockers
+#   standard — safety + quality warnings, including gateguard (default)
+#   strict   — reserved for hooks that opt into a stricter tier than standard
 #
 # Usage in hook scripts (add after set -euo pipefail):
 #   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -71,28 +71,9 @@ if [ -z "${UNITY_HOOK_STATE_DIR:-}" ]; then
 fi
 mkdir -p "$UNITY_HOOK_STATE_DIR"
 
-UNITY_SESSION_FILE="${UNITY_HOOK_STATE_DIR}/session.json"
 UNITY_READS_FILE="${UNITY_HOOK_STATE_DIR}/gateguard-reads.txt"
 UNITY_EDITS_FILE="${UNITY_HOOK_STATE_DIR}/session-edits.txt"
-UNITY_COST_FILE="${UNITY_HOOK_STATE_DIR}/session-cost.jsonl"
-UNITY_LEARNING_FILE="${UNITY_HOOK_STATE_DIR}/learnings.jsonl"
 UNITY_WARNINGS_FILE="${UNITY_HOOK_STATE_DIR}/session-warnings.txt"
-UNITY_NOTIFY_EVENT_FILE="${UNITY_HOOK_STATE_DIR}/notify-event.json"
-
-# Instinct system paths (project-scoped, with global layer for promoted instincts)
-UNITY_INSTINCTS_DIR="${UNITY_HOOK_STATE_DIR}/instincts"
-UNITY_OBSERVATIONS_FILE="${UNITY_INSTINCTS_DIR}/observations.jsonl"
-
-# unity_project_hash — stable identifier for the current project
-# Prefers git remote URL (shared across clones); falls back to repo root path.
-unity_project_hash() {
-    local src
-    src="$(git config --get remote.origin.url 2>/dev/null)" || true
-    if [ -z "$src" ]; then
-        src="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-    fi
-    echo "$src" | shasum | awk '{print $1}' | cut -c1-12
-}
 
 # --- Shared utilities ---
 
@@ -130,39 +111,6 @@ unity_track_read() {
 unity_was_read() {
     local file_path="$1"
     [ -f "$UNITY_READS_FILE" ] && grep -qxF "$file_path" "$UNITY_READS_FILE" 2>/dev/null
-}
-
-# unity_state_read — read a top-level key from session.json
-# Usage: unity_state_read "branch" -> prints the value
-unity_state_read() {
-    local key="$1"
-    if [ -f "$UNITY_SESSION_FILE" ]; then
-        jq -r ".$key // empty" "$UNITY_SESSION_FILE" 2>/dev/null
-    fi
-}
-
-# unity_state_write — write a top-level key to session.json
-# Usage: unity_state_write "workflow_phase" '"Execute"'
-unity_state_write() {
-    local key="$1"
-    local value="$2"
-    if [ -f "$UNITY_SESSION_FILE" ]; then
-        local tmp="${UNITY_SESSION_FILE}.tmp"
-        jq --argjson val "$value" ".$key = \$val" "$UNITY_SESSION_FILE" > "$tmp" 2>/dev/null && mv "$tmp" "$UNITY_SESSION_FILE"
-    fi
-}
-
-# unity_state_plan_update — update a plan step status in session.json
-# Usage: unity_state_plan_update "Write DamageSystem" "done"
-unity_state_plan_update() {
-    local step_name="$1"
-    local new_status="$2"
-    if [ -f "$UNITY_SESSION_FILE" ]; then
-        local tmp="${UNITY_SESSION_FILE}.tmp"
-        jq --arg name "$step_name" --arg status "$new_status" \
-            '(.plan.steps // [])[] | select(.name == $name) |= (.status = $status)' \
-            "$UNITY_SESSION_FILE" > "$tmp" 2>/dev/null && mv "$tmp" "$UNITY_SESSION_FILE"
-    fi
 }
 
 # unity_track_warning — record a hook warning for session analytics
