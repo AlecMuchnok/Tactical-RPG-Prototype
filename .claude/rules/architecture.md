@@ -3,7 +3,7 @@
 ## The Stack (priority order: composability/flexibility → onboarding ease → performance)
 
 1. **Component composition over inheritance** — units are built from small, focused MonoBehaviours.
-2. **ScriptableObject data + event channels** — static data and cross-system communication both live in SO assets.
+2. **ScriptableObject data + event channels** — static data and cross-system communication both live in ScriptableObject assets.
 3. **State machines** — turn flow and per-unit behavior are explicit states, not bools.
 4. **Command pattern** — player and AI actions are the same command objects.
 5. **MVP for UI** — Presenters mediate between game state and UI Views; Views never touch gameplay types.
@@ -105,7 +105,7 @@ public sealed class Movement : MonoBehaviour
 
 ```csharp
 [CreateAssetMenu(menuName = "Game/Unit Stats")]
-public sealed class UnitStatsSO : ScriptableObject
+public sealed class UnitStats : ScriptableObject
 {
     [SerializeField] private string _displayName;
     [SerializeField] private int _maxHealth;
@@ -113,7 +113,7 @@ public sealed class UnitStatsSO : ScriptableObject
 }
 ```
 
-Unit stats, abilities, items, enemy templates — all ScriptableObjects, never hardcoded in a script or hand-authored per scene object.
+Unit stats, abilities, items, enemy templates — all ScriptableObjects, never hardcoded in a script or hand-authored per scene object. Class names are plain nouns, same as any other type — no `SO` suffix. The `Scripts/Data/` folder (see Folder Structure) is what marks a type as a ScriptableObject definition, not its name.
 
 ### Event channels — cross-system communication
 
@@ -124,10 +124,12 @@ using System;
 using UnityEngine;
 
 /// <summary>A cross-system signal carrying a Health reference (e.g. "this unit
-/// was defeated"). One concrete class per payload type — no open generic SO,
-/// which is confusing to inspect and configure for a newcomer.</summary>
+/// was defeated"). One concrete class per payload type — no open generic
+/// channel type, which is confusing to inspect and configure for a
+/// newcomer. Named for what it is ("Channel"), not decorated with a type-tag
+/// suffix — see the naming note below.</summary>
 [CreateAssetMenu(menuName = "Game/Event Channels/Unit Channel")]
-public sealed class UnitEventChannelSO : ScriptableObject
+public sealed class UnitEventChannel : ScriptableObject
 {
     public event Action<Health> Raised;
 
@@ -139,7 +141,7 @@ public sealed class UnitEventChannelSO : ScriptableObject
 // --- Publisher: CombatSystem, holds the channel via a serialized reference ---
 public sealed class CombatSystem : MonoBehaviour
 {
-    [SerializeField] private UnitEventChannelSO _unitDefeatedChannel;
+    [SerializeField] private UnitEventChannel _unitDefeatedChannel;
 
     private void ResolveDamage(Health target, int amount)
     {
@@ -151,7 +153,7 @@ public sealed class CombatSystem : MonoBehaviour
 // --- Subscriber: a UI Presenter, holds the SAME channel asset via the Inspector ---
 public sealed class DefeatBannerPresenter : MonoBehaviour
 {
-    [SerializeField] private UnitEventChannelSO _unitDefeatedChannel;
+    [SerializeField] private UnitEventChannel _unitDefeatedChannel;
     [SerializeField] private DefeatBannerView _view;
 
     private void OnEnable() => _unitDefeatedChannel.Raised += OnUnitDefeated;
@@ -168,7 +170,7 @@ public sealed class DefeatBannerPresenter : MonoBehaviour
 | What | Subscribe | Unsubscribe |
 |---|---|---|
 | A sibling component's event (same GameObject) | `Awake` | `OnDestroy` |
-| An SO event channel | `OnEnable` | `OnDisable` |
+| An event channel asset | `OnEnable` | `OnDisable` |
 | Unity `InputAction` callbacks | `OnEnable` | `OnDisable` |
 | A UGUI / UI Toolkit control | `OnEnable` | `OnDisable` |
 
@@ -324,7 +326,7 @@ public sealed class UnitInfoView : MonoBehaviour
 public sealed class UnitInfoPresenter : MonoBehaviour
 {
     [SerializeField] private UnitInfoView _view;
-    [SerializeField] private UnitEventChannelSO _selectionChangedChannel;
+    [SerializeField] private UnitEventChannel _selectionChangedChannel;
 
     private void OnEnable() => _selectionChangedChannel.Raised += OnSelectionChanged;
     private void OnDisable() => _selectionChangedChannel.Raised -= OnSelectionChanged;
@@ -404,10 +406,10 @@ Assets/
     Components/       Health.cs, Movement.cs, AttackAbility.cs, StatusEffectHandler.cs
     Systems/           GridManager.cs, TurnManager.cs, CombatSystem.cs (MonoBehaviours, service-registered)
     Services/          ServiceLocator.cs
-    EventChannels/     UnitEventChannelSO.cs, VoidEventChannelSO.cs, ...
+    EventChannels/     UnitEventChannel.cs, VoidEventChannel.cs, ...
     StateMachines/     IUnitState.cs, UnitStateMachine.cs, IdleState.cs, MovingState.cs, IBattlePhase.cs, BattleStateMachine.cs
     Commands/          ICommand.cs, MoveCommand.cs, AttackCommand.cs, UseItemCommand.cs
-    Data/              UnitStatsSO.cs, AbilitySO.cs, ItemSO.cs, EnemyTemplateSO.cs — the SO class DEFINITIONS
+    Data/              UnitStats.cs, Ability.cs, Item.cs, EnemyTemplate.cs — the ScriptableObject class DEFINITIONS
     UI/
       Views/           UnitInfoView.cs, TurnBannerView.cs — no gameplay references
       Presenters/      UnitInfoPresenter.cs — mediates

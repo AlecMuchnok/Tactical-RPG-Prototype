@@ -114,10 +114,21 @@ SpriteAtlas "CardAtlas" containing all 52 cards + backs + UI elements
 ```
 
 **Rules:**
-- **All 2D sprites MUST use Sprite Atlases** — create atlases in `Assets/Art/Atlases/`
-- Group by rendering layer: one atlas per logical group (cards, UI icons, environment tiles)
+- Sprites that ship as a **tileset or sprite sheet already count as atlased** — a multi-sprite
+  texture sliced into `Ground Tiles_0`, `Ground Tiles_1`, ... is one texture and one draw call
+  for everything on it, same as a Sprite Atlas would give. Do not repack an already-sliced
+  sheet into a separate Sprite Atlas — that's optimizing something that isn't a problem.
+- Reach for a Sprite Atlas when you accumulate **many individually-imported sprite files that
+  render together** (UI icons, per-unit portraits, card faces) — that's the case this rule
+  exists for. Create these atlases in `Assets/Art/Atlases/`.
+- Atlas by **rendering group**, never "everything in one" — a tileset, a UI icon set, and a set
+  of per-unit animation sheets have different lifetimes and different reasons to change; don't
+  merge them into a single atlas just because they're all sprites.
 - Max atlas size: 4096x4096. Pick the smallest power of two the sprites actually fit in — a half-empty 4096 atlas wastes 64MB of VRAM for nothing.
-- Enable "Tight Packing" and "Allow Rotation" for optimal packing
+- Enable "Tight Packing" and "Allow Rotation" for optimal packing on a Sprite Atlas — **except**
+  when the atlas contains sprites destined for a `Tilemap`. Both settings produce wrong UVs in a
+  `TilemapRenderer` (a rotated or tightly-packed tile sprite samples the wrong texture region),
+  so leave both off for any atlas holding tile sprites.
 - The plan MUST specify atlas grouping
 
 ### Material Sharing
