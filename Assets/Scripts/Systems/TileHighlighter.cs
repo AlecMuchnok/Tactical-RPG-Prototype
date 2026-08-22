@@ -4,16 +4,12 @@ using UnityEngine.Tilemaps;
 
 /// <summary>
 /// Drives the Highlights tilemap for range, path, attack-target, and hover
-/// previews. Repaints from scratch on every mutation rather than incrementally
-/// patching colours — the previous incremental model needed every mutator to
-/// keep two collections in sync, and one didn't (a painted path could be
-/// orphaned on screen after the range that spawned it was cleared).
-/// `_paintedCells` is now the single source of truth for what's on the
-/// tilemap, so nothing can be orphaned again. Each state's Enter is expected
-/// to fully establish the highlight (Clear() first if it needs a clean
-/// slate); Exit no longer clears.
+/// previews. Repaints from scratch on every mutation; `_paintedCells` is the
+/// single source of truth for what's currently on the tilemap, so a stale
+/// layer can never be left painted after it's cleared. Each state's Enter is
+/// expected to fully establish the highlight it wants (calling Clear() first
+/// if it needs a clean slate) — Exit does not clear.
 /// </summary>
-[DefaultExecutionOrder(-100)]
 public sealed class TileHighlighter : MonoBehaviour
 {
     [SerializeField] private Tilemap _highlightTilemap;
@@ -30,10 +26,9 @@ public sealed class TileHighlighter : MonoBehaviour
 
     private readonly HashSet<Vector2Int> _paintedCells = new HashSet<Vector2Int>();
 
-    // why: registered like the Systems in architecture.md §6 even though this
-    // lives outside that four-system list — the plain-C# selection states
-    // (StateMachines/PlayerSelection) aren't MonoBehaviours and have no scene
-    // reference otherwise, so this is the only way for them to reach it.
+    // Registered like a Systems-tier service even though this file lives
+    // elsewhere — the plain-C# selection states have no scene reference of
+    // their own otherwise, so this is the only way for them to reach it.
     private void Awake() {
         ServiceLocator.Register(this);
     }
@@ -50,13 +45,13 @@ public sealed class TileHighlighter : MonoBehaviour
 
     public void SetPath(IReadOnlyList<Vector2Int> path) {
         _pathCells.Clear();
-        for (int pathIndex = 0; pathIndex < path.Count; pathIndex++) { _pathCells.Add(path[pathIndex]); }
+        foreach (Vector2Int cell in path) { _pathCells.Add(cell); }
         Repaint();
     }
 
     public void SetTargets(IReadOnlyList<Vector2Int> cells) {
         _targetCells.Clear();
-        for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++) { _targetCells.Add(cells[cellIndex]); }
+        foreach (Vector2Int cell in cells) { _targetCells.Add(cell); }
         Repaint();
     }
 
@@ -80,8 +75,8 @@ public sealed class TileHighlighter : MonoBehaviour
         _paintedCells.Clear();
 
         foreach (Vector2Int cell in _rangeCells) { Paint(cell, _rangeColor); }
-        for (int pathIndex = 0; pathIndex < _pathCells.Count; pathIndex++) { Paint(_pathCells[pathIndex], _pathColor); }
-        for (int targetIndex = 0; targetIndex < _targetCells.Count; targetIndex++) { Paint(_targetCells[targetIndex], _targetColor); }
+        foreach (Vector2Int cell in _pathCells) { Paint(cell, _pathColor); }
+        foreach (Vector2Int cell in _targetCells) { Paint(cell, _targetColor); }
         if (_hoverCell.HasValue) { Paint(_hoverCell.Value, _hoverColor); }
     }
 
@@ -93,10 +88,8 @@ public sealed class TileHighlighter : MonoBehaviour
         _paintedCells.Add(cell);
     }
 
-    // why: Tilemap's API is the only thing in this class that needs
-    // Vector3Int — every other file in the project (GridManager, Pathfinder,
-    // Unit.Cell, every command and state) speaks Vector2Int, so conversion is
-    // confined to this one boundary method rather than storing Vector3Int
-    // throughout the class.
+    // Tilemap's API is the only thing in this class that needs Vector3Int —
+    // everything else here speaks Vector2Int, so the conversion is confined
+    // to this one boundary method.
     private static Vector3Int ToTilemapCell(Vector2Int cell) => new Vector3Int(cell.x, cell.y, 0);
 }

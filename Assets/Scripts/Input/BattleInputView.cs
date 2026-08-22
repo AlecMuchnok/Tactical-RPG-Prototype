@@ -4,14 +4,11 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Reads mouse input directly via the New Input System's Mouse.current — no
-/// .inputactions asset needed for this simple hover/click/cancel surface.
-/// Pure adapter: converts screen input into board events, zero gameplay
-/// logic. "Input locked" during non-interactive states isn't handled here —
-/// it falls out naturally from the current ISelectionState's handlers being
-/// no-ops (see ExecutingActionState/AwaitingConfirmState).
+/// Reads mouse input via the New Input System and converts it into board
+/// hover/click/cancel events — pure adapter, zero gameplay logic.
+/// Non-interactive states aren't handled here; they simply leave their
+/// ISelectionState handlers as no-ops.
 /// </summary>
-[DefaultExecutionOrder(-100)]
 public sealed class BattleInputView : MonoBehaviour
 {
     private Camera _camera;

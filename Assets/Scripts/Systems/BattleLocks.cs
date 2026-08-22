@@ -2,13 +2,10 @@ using UnityEngine;
 
 /// <summary>
 /// A count of things currently holding up battle progression — a damage
-/// popup mid-float, and later a hit VFX or a death animation, all take a lock
+/// popup mid-float, and later a hit VFX or death animation, each take a lock
 /// while they play and release it when done. Turn flow awaits the count
-/// returning to zero instead of holding a reference to any specific effect,
-/// which is what keeps EnemyTurnState/ExecutingActionState decoupled from
-/// DamagePopupPresenter (architecture.md §2).
+/// returning to zero instead of holding a reference to any specific effect.
 /// </summary>
-[DefaultExecutionOrder(-100)]
 public sealed class BattleLocks : MonoBehaviour
 {
     private int _lockCount;
@@ -25,8 +22,8 @@ public sealed class BattleLocks : MonoBehaviour
         _lockCount++;
     }
 
-    // why: floored at zero so a stray double-release (e.g. a bug elsewhere)
-    // can't drive the count negative and leave the battle permanently locked.
+    // Floored at zero so a stray double-release can't drive the count
+    // negative and leave the battle permanently locked.
     public void Remove() {
         _lockCount = Mathf.Max(0, _lockCount - 1);
     }

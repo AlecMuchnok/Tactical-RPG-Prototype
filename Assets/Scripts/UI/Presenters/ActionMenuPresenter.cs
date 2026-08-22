@@ -5,12 +5,9 @@ using UnityEngine;
 /// <summary>
 /// Pure mediator between the confirm-dialog View and the game: converts
 /// BattleAction choices to labels, positions the menu at a board cell, and
-/// reports which action was chosen. Game-flow decisions (which actions exist,
-/// what each one does) live in AwaitingConfirmState — this class used to
-/// decide those itself (finding adjacent enemies, building commands), which
-/// was game logic living in a UI class.
+/// reports which action was chosen. Game-flow decisions — which actions
+/// exist, what each one does — live in AwaitingConfirmState, not here.
 /// </summary>
-[DefaultExecutionOrder(-100)]
 public sealed class ActionMenuPresenter : MonoBehaviour
 {
     [SerializeField] private ActionMenuView _view;
@@ -22,9 +19,9 @@ public sealed class ActionMenuPresenter : MonoBehaviour
     private IReadOnlyList<BattleAction> _actions;
     private Action<BattleAction> _onChosen;
 
-    // why: registered like the four named Systems in architecture.md §6 even
-    // though this lives in UI/Presenters — the plain-C# AwaitingConfirmState
-    // isn't a MonoBehaviour and has no scene reference otherwise.
+    // Registered here even though this lives in UI/Presenters, not Systems —
+    // the plain-C# AwaitingConfirmState isn't a MonoBehaviour and has no
+    // scene reference otherwise.
     private void Awake() {
         ServiceLocator.Register(this);
     }
@@ -50,8 +47,8 @@ public sealed class ActionMenuPresenter : MonoBehaviour
         _onChosen = onChosen;
 
         _optionLabels.Clear();
-        for (int actionIndex = 0; actionIndex < actions.Count; actionIndex++) {
-            _optionLabels.Add(actions[actionIndex].ToString());
+        foreach (BattleAction action in actions) {
+            _optionLabels.Add(action.ToString());
         }
 
         Vector3 worldPosition = _grid.CellToWorld(anchorCell);
