@@ -15,9 +15,9 @@ public sealed class WaitCommand : ICommand
         _unit.MarkActed();
     }
 
-    // why: Wait is the terminal choice in the confirm menu — nothing follows
-    // it to cancel back out of, so Undo() is never called in practice, but
-    // the interface still requires an implementation.
+    // Wait is the terminal choice in the confirm menu — nothing follows it
+    // to cancel back out of, so Undo() is never called in practice, but the
+    // interface still requires an implementation.
     public async Awaitable Undo() {
     }
 }

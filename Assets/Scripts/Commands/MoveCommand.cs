@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Moves a unit along a precomputed path, and can undo that move — see architecture.md §4 on when Undo() should do real work.</summary>
+/// <summary>Moves a unit along a precomputed path, and can undo that move.</summary>
 public sealed class MoveCommand : ICommand
 {
     private readonly Unit _unit;
@@ -27,17 +27,15 @@ public sealed class MoveCommand : ICommand
         await _unit.View.PlayMoveAsync(_path);
     }
 
-    // why: reverses the confirmed path in place. A real feature now that a
-    // unit can pre-move onto a destination before the player commits to an
-    // action (AwaitingConfirmState / SelectingTargetState) — architecture.md
-    // §4 names exactly this ("a 'confirm move' UI step") as when Undo()
-    // should do real work rather than stay a documented no-op.
+    // Reverses the confirmed path in place — a real feature now that a unit
+    // can pre-move onto a destination before the player commits to an action
+    // (AwaitingConfirmState / SelectingTargetState).
     public async Awaitable Undo() {
         if (!IsExecuted) { return; }
 
         BuildReturnPath();
         _unit.SetCell(_previousCell);
-        // why: MoveCommand only ever executes when !_unit.HasMoved (its own
+        // MoveCommand only ever executes when !_unit.HasMoved (its own
         // CanExecute), so clearing is always the correct inverse of the
         // MarkMoved() that Execute() applied — no need to snapshot the prior
         // flag value.

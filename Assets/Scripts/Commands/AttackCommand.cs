@@ -16,19 +16,19 @@ public sealed class AttackCommand : ICommand
         return ServiceLocator.Get<CombatSystem>().AreAdjacent(_attacker, _defender);
     }
 
-    // why: no visual to await here (ResolveAttack resolves instantly) — kept
-    // `async` with no `await` so every ICommand.Execute() has the same
-    // Awaitable-returning shape for ExecutingActionState/EnemyTurnState to
-    // sequence uniformly, rather than special-casing this one command.
+    // No visual to await here (ResolveAttack resolves instantly) — kept
+    // async with no await so every ICommand.Execute() has the same
+    // Awaitable-returning shape for callers to sequence uniformly, rather
+    // than special-casing this one command.
     public async Awaitable Execute() {
         ServiceLocator.Get<CombatSystem>().ResolveAttack(_attacker, _defender);
         _attacker.MarkActed();
     }
 
-    // why: target selection gates this action before Execute() ever runs —
-    // once an attack resolves it has real consequences (damage dealt, a unit
+    // Target selection gates this action before Execute() ever runs — once
+    // an attack resolves it has real consequences (damage dealt, a unit
     // possibly defeated) that can't be meaningfully rolled back, unlike the
-    // pre-move which is purely positional (architecture.md §4).
+    // pre-move which is purely positional.
     public async Awaitable Undo() {
     }
 }
