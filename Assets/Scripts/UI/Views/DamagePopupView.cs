@@ -30,8 +30,8 @@ public sealed class DamagePopupView : MonoBehaviour
                 await Awaitable.NextFrameAsync(destroyCancellationToken);
             }
         } catch (OperationCanceledException) {
-            // why: the popup's GameObject was destroyed mid-float (e.g.
-            // exiting play mode) — nothing left to animate, safe to swallow.
+            // The popup's GameObject was destroyed mid-float (e.g. exiting
+            // play mode) — nothing left to animate, safe to swallow.
         }
     }
 }

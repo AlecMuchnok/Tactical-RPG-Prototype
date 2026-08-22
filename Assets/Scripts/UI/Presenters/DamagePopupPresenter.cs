@@ -1,15 +1,7 @@
 using UnityEngine;
 using UnityEngine.Pool;
 
-/// <summary>
-/// Subscribes to attack outcomes and plays a pooled floating damage/miss
-/// popup at the target's sprite centre. AttackOutcome is captured
-/// synchronously off the event, before CombatSystem applies damage — a
-/// killing blow destroys the target's GameObject, so reading its position
-/// any later would risk touching a destroyed object. The popup itself is
-/// parented to this presenter, not the unit, so it finishes its animation
-/// even if the unit is destroyed mid-flight.
-/// </summary>
+/// <summary>Subscribes to attack outcomes and plays a pooled floating damage/miss popup at the target's sprite centre.</summary>
 public sealed class DamagePopupPresenter : MonoBehaviour
 {
     [SerializeField] private AttackOutcomeEventChannel _attackResolvedChannel;
@@ -19,8 +11,6 @@ public sealed class DamagePopupPresenter : MonoBehaviour
     private BattleLocks _locks;
 
     private void Awake() {
-        // why: object pooling is mandatory for VFX that spawn per-hit
-        // (performance.md) — damage popups spawn on every resolved attack.
         _pool = new ObjectPool<DamagePopupView>(CreatePopup, OnGetPopup, OnReleasePopup, OnDestroyPopup);
     }
 
@@ -37,20 +27,23 @@ public sealed class DamagePopupPresenter : MonoBehaviour
     }
 
     private void OnAttackResolved(AttackOutcome outcome) {
+        // Captured synchronously off the event, before CombatSystem applies
+        // damage — a killing blow destroys the target's GameObject, so
+        // reading its position any later would risk touching a destroyed object.
         Vector3 position = outcome.Target.View.SpriteCenter;
         string text = outcome.Hit ? outcome.Damage.ToString() : "Miss";
-        // why: fire-and-forget from a synchronous event handler —
-        // cancellation mid-float is already caught inside
-        // DamagePopupView.PlayAsync, so nothing here needs its own try/catch.
+        // Fire-and-forget from a synchronous event handler — cancellation
+        // mid-float is already caught inside DamagePopupView.PlayAsync, so
+        // nothing here needs its own try/catch.
         _ = PlayPopupAsync(text, !outcome.Hit, position);
     }
 
     private async Awaitable PlayPopupAsync(string text, bool isMiss, Vector3 position) {
         DamagePopupView popup = _pool.Get();
         _locks.Add();
-        // why: try/finally so a popup cancelled mid-float (e.g. exiting play
-        // mode) still releases its lock — otherwise the count would stick
-        // above zero and every subsequent turn would hang.
+        // try/finally so a popup cancelled mid-float (e.g. exiting play mode)
+        // still releases its lock — otherwise the count would stick above
+        // zero and every subsequent turn would hang.
         try {
             await popup.PlayAsync(text, isMiss, position);
         } finally {
@@ -59,6 +52,8 @@ public sealed class DamagePopupPresenter : MonoBehaviour
         }
     }
 
+    // Parented to this presenter, not the unit, so it finishes its animation
+    // even if the unit is destroyed mid-flight.
     private DamagePopupView CreatePopup() {
         return Instantiate(_popupPrefab, transform);
     }

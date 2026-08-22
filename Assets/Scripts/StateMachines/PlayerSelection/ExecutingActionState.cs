@@ -17,25 +17,24 @@ public sealed class ExecutingActionState : ISelectionState
 
     public void Enter(SelectionStateMachine machine) {
         machine.Highlighter.Clear();
-        // why: fire-and-forget from a synchronous Enter() — cancellation from
-        // a mid-glide destroy is already caught inside UnitView.PlayMoveAsync,
+        // Fire-and-forget from a synchronous Enter() — cancellation from a
+        // mid-glide destroy is already caught inside UnitView.PlayMoveAsync,
         // but WaitUntilClearAsync below adds a new throw site (play mode
-        // exiting while a popup is mid-float), so this now needs its own catch.
+        // exiting while a popup is mid-float), so this needs its own catch.
         _ = RunAsync(machine);
     }
 
     private async Awaitable RunAsync(SelectionStateMachine machine) {
         try {
-            for (int commandIndex = 0; commandIndex < _commands.Count; commandIndex++) {
-                ICommand command = _commands[commandIndex];
+            foreach (ICommand command in _commands) {
                 if (command.CanExecute()) {
                     await command.Execute();
                 }
             }
 
-            // why: holds the turn open until any fire-and-forget feedback
-            // (damage popups today) finishes, so the next unit's turn can't
-            // start while a popup from this action is still on screen.
+            // Holds the turn open until any fire-and-forget feedback (damage
+            // popups today) finishes, so the next unit's turn can't start
+            // while a popup from this action is still on screen.
             await machine.Locks.WaitUntilClearAsync();
         } catch (System.OperationCanceledException) {
             return;

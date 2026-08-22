@@ -47,8 +47,8 @@ public sealed class ActionMenuView : MonoBehaviour
     }
 
     private void ClearButtons() {
-        for (int buttonIndex = 0; buttonIndex < _spawnedButtons.Count; buttonIndex++) {
-            Destroy(_spawnedButtons[buttonIndex].gameObject);
+        foreach (Button button in _spawnedButtons) {
+            Destroy(button.gameObject);
         }
         _spawnedButtons.Clear();
     }

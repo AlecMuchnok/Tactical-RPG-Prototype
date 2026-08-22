@@ -15,8 +15,7 @@ public sealed class TerrainDatabase : ScriptableObject
 
     private void OnEnable() {
         _lookup = new Dictionary<TileBase, TerrainType>();
-        for (int terrainIndex = 0; terrainIndex < _terrainTypes.Count; terrainIndex++) {
-            TerrainType terrainType = _terrainTypes[terrainIndex];
+        foreach (TerrainType terrainType in _terrainTypes) {
             if (terrainType != null && terrainType.Tile != null) {
                 _lookup[terrainType.Tile] = terrainType;
             }
