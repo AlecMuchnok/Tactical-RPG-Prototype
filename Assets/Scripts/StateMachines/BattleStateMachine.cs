@@ -7,8 +7,4 @@ public sealed class BattleStateMachine
         _current = next;
         _current?.Enter(this);
     }
-
-    public void Tick(float deltaTime) {
-        _current?.Tick(this, deltaTime);
-    }
 }

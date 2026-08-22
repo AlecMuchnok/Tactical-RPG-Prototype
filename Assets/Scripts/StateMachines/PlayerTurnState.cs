@@ -29,9 +29,6 @@ public sealed class PlayerTurnState : IBattlePhase
         _inputView.Cancelled += _selectionMachine.HandleCancelled;
     }
 
-    public void Tick(BattleStateMachine machine, float deltaTime) {
-    }
-
     public void Exit(BattleStateMachine machine) {
         _inputView.CellHovered -= _selectionMachine.HandleCellHovered;
         _inputView.CellClicked -= _selectionMachine.HandleCellClicked;

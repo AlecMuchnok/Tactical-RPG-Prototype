@@ -1,7 +1,6 @@
 using UnityEngine;
 
 /// <summary>Owns the battle-phase state machine and whose turn it currently is.</summary>
-[DefaultExecutionOrder(-100)]
 public sealed class TurnManager : MonoBehaviour
 {
     [SerializeField] private TeamEventChannel _turnChangedChannel;
@@ -18,10 +17,6 @@ public sealed class TurnManager : MonoBehaviour
     private void Start() {
         _turnChangedChannel.Raise(Team.Player);
         _stateMachine.ChangeState(new PlayerTurnState());
-    }
-
-    private void Update() {
-        _stateMachine.Tick(Time.deltaTime);
     }
 
     private void OnDestroy() {

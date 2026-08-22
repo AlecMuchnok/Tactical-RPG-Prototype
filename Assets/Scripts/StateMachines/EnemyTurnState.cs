@@ -42,9 +42,6 @@ public sealed class EnemyTurnState : IBattlePhase
         ServiceLocator.Get<TurnManager>().EndTurn();
     }
 
-    public void Tick(BattleStateMachine machine, float deltaTime) {
-    }
-
     public void Exit(BattleStateMachine machine) {
     }
 }
