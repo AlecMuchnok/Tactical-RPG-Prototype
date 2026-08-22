@@ -27,6 +27,10 @@ No `feature/`/`fix/`/`chore/` prefix — branch names are short and kebab-case (
 
 **Enforced, not just documented:** `.claude/hooks/guard-destructive-commands.sh` blocks `git commit` while `main` (or `master`) is checked out. Escape hatch: `DISABLE_HOOK_GUARD_DESTRUCTIVE_COMMANDS=1` if you genuinely need to commit on `main` — prefer just making the branch instead.
 
+## 3. Commit message length
+
+Header under 50 characters. Body after the header under 200 characters.
+
 ## What this does NOT cover
 
 - Merging the feature branch back to `main` (via PR) is a manual step — this project doesn't script that.
