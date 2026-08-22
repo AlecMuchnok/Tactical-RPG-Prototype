@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Everything cosmetic about a unit: sprite, selection tint, sort order, HP bar, and the glide animation.</summary>
+/// <summary>Everything cosmetic about a unit: sprite, selection tint, HP bar, and the glide animation.</summary>
 [RequireComponent(typeof(SpriteRenderer))]
 public sealed class UnitView : MonoBehaviour
 {
-    private const int SortingOrder = 100;
-
     [SerializeField, Min(0.01f)] private float _moveSpeed = 4f;
     [SerializeField] private Color _normalColor = Color.white;
     [SerializeField] private Color _selectedColor = new Color(1f, 0.85f, 0.2f, 1f);
@@ -37,7 +35,6 @@ public sealed class UnitView : MonoBehaviour
         _grid = ServiceLocator.Get<GridManager>();
         _renderer.sprite = _unit.Stats.Sprite;
         _renderer.color = _normalColor;
-        _renderer.sortingOrder = SortingOrder;
         transform.position = _grid.CellToWorld(_unit.Cell);
 
         // Subscribing here (not Awake) because Health.Initialize runs inside
