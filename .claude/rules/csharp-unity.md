@@ -90,9 +90,17 @@ public sealed class PlayerController : MonoBehaviour
 ## Control Flow
 
 - Braces always, even for single-line `if`/`for`/`while`
-- `for` over `foreach` in hot paths (Update, FixedUpdate)
+- **`foreach` is the default.** Reach for indexed `for` only in a genuine hot path (`Update`, `FixedUpdate`, `LateUpdate`) where the allocation/bounds-check difference actually matters, or when the loop body needs the index itself, not just the current element. An indexed loop outside a hot path that never touches the index is a rule violation, not a stylistic choice — don't default to `for` out of habit.
 - No abbreviated loop variables — `for (int enemyIndex = 0; ...)` not `for (int i = 0; ...)`
 - No magic strings — use `nameof()`, `Animator.StringToHash()`, `Shader.PropertyToID()`
+
+## Comments
+
+- No `why:` label. If an explanation is worth including, write it directly — the label adds a word without adding information.
+- Never reference `architecture.md`, `performance.md`, or a section number from either. Those are project rules for people editing the code, not something a reader of the committed code can consult inline — a comment that cites a rule to justify itself is explaining the rule's existence, not the code's behavior.
+- Never reference a plan file or planning step ("per the plan", "the plan's §4", "as planned") — plans are temporary and never committed, so the reference is stale the moment it's read.
+- Never name a class, split, or design that doesn't exist in the current codebase (an earlier design option, a since-removed type). Describe what the code is, not what it used to be or almost was.
+- Class/type summary comments are one to three sentences: what the thing is, not a design-rationale essay. A non-obvious *why* belongs on the specific line it explains, briefly — not folded into the class header.
 
 ## Other
 
