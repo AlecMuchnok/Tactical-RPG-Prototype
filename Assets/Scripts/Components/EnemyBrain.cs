@@ -5,8 +5,7 @@ using UnityEngine;
 /// Decides one enemy unit's turn: path toward whichever player unit is
 /// cheapest to reach (lowest terrain movement cost, not tile count or
 /// straight-line distance), then attack if adjacent afterward. Builds the
-/// same ICommand types a player action would — no separate AI combat path
-/// (architecture.md §4).
+/// same ICommand types a player action would — no separate AI combat path.
 /// </summary>
 [RequireComponent(typeof(Unit))]
 public sealed class EnemyBrain : MonoBehaviour
@@ -15,16 +14,7 @@ public sealed class EnemyBrain : MonoBehaviour
     private GridManager _grid;
     private UnitRegistry _unitRegistry;
 
-    private readonly Dictionary<Vector2Int, float> _floodCosts = new Dictionary<Vector2Int, float>();
-    private readonly List<Vector2Int> _fullPath = new List<Vector2Int>();
-    private readonly List<Vector2Int> _truncatedPath = new List<Vector2Int>();
-    private readonly List<Unit> _playerUnits = new List<Unit>();
-
-    private static readonly Vector2Int[] NeighborOffsets = new Vector2Int[]
-    {
-        new Vector2Int(1, 0), new Vector2Int(-1, 0),
-        new Vector2Int(0, 1), new Vector2Int(0, -1),
-    };
+    private readonly Dictionary<Vector2Int, int> _floodCosts = new Dictionary<Vector2Int, int>();
 
     private void Awake() {
         _unit = GetComponent<Unit>();
@@ -35,47 +25,48 @@ public sealed class EnemyBrain : MonoBehaviour
         _unitRegistry = ServiceLocator.Get<UnitRegistry>();
     }
 
-    /// <summary>Fills `result` (cleared first) with this unit's turn: at most one move, then an attack or a wait.</summary>
-    public void BuildTurn(List<ICommand> result) {
-        result.Clear();
+    /// <summary>This unit's turn: at most one move, then an attack or a wait.</summary>
+    public List<ICommand> BuildTurn() {
+        List<ICommand> result = new List<ICommand>();
 
-        _unitRegistry.UnitsOnTeam(Team.Player, _playerUnits);
-        if (_playerUnits.Count == 0) { return; }
+        List<Unit> playerUnits = _unitRegistry.UnitsOnTeam(Team.Player);
+        if (playerUnits.Count == 0) { return result; }
 
-        bool IsBlocked(Vector2Int cell) => _unitRegistry.GetUnitAt(cell) != null;
+        _grid.Pathfinder.FloodCosts(_unit.Cell, int.MaxValue, _grid, _unitRegistry.IsOccupied, _floodCosts);
 
-        _grid.Pathfinder.FloodCosts(_unit.Cell, float.MaxValue, _grid, IsBlocked, _floodCosts);
-
-        Unit targetUnit = FindClosestPlayer(out Vector2Int bestAdjacentCell);
-        if (targetUnit == null) { return; }
+        Unit targetUnit = FindClosestPlayer(playerUnits, out Vector2Int bestAdjacentCell);
+        if (targetUnit == null) { return result; }
 
         Vector2Int finalCell = _unit.Cell;
         if (_unit.Cell != bestAdjacentCell) {
-            _grid.Pathfinder.TryFindPath(_unit.Cell, bestAdjacentCell, _grid, IsBlocked, _fullPath);
-            TruncateToMovement(_fullPath, _unit.Stats.Movement, _truncatedPath);
-            if (_truncatedPath.Count > 0) {
-                result.Add(new MoveCommand(_unit, new List<Vector2Int>(_truncatedPath)));
-                finalCell = _truncatedPath[_truncatedPath.Count - 1];
+            List<Vector2Int> fullPath = new List<Vector2Int>();
+            _grid.Pathfinder.TryFindPath(_unit.Cell, bestAdjacentCell, _grid, _unitRegistry.IsOccupied, fullPath);
+            List<Vector2Int> truncatedPath = TruncateToMovement(fullPath, _unit.Stats.Movement);
+            if (truncatedPath.Count > 0) {
+                result.Add(new MoveCommand(_unit, truncatedPath));
+                finalCell = truncatedPath[truncatedPath.Count - 1];
             }
         }
 
-        if (IsAdjacent(finalCell, targetUnit.Cell)) {
+        // finalCell and targetUnit.Cell are orthogonally adjacent (Manhattan distance 1)
+        if (Mathf.Abs(finalCell.x - targetUnit.Cell.x) + Mathf.Abs(finalCell.y - targetUnit.Cell.y) == 1) {
             result.Add(new AttackCommand(_unit, targetUnit));
         } else {
             result.Add(new WaitCommand(_unit));
         }
+
+        return result;
     }
 
-    private Unit FindClosestPlayer(out Vector2Int bestAdjacentCell) {
+    private Unit FindClosestPlayer(List<Unit> playerUnits, out Vector2Int bestAdjacentCell) {
         Unit bestUnit = null;
         bestAdjacentCell = default;
-        float bestCost = float.MaxValue;
+        int bestCost = int.MaxValue;
 
-        for (int playerIndex = 0; playerIndex < _playerUnits.Count; playerIndex++) {
-            Unit player = _playerUnits[playerIndex];
-            for (int offsetIndex = 0; offsetIndex < NeighborOffsets.Length; offsetIndex++) {
-                Vector2Int neighbor = player.Cell + NeighborOffsets[offsetIndex];
-                if (!_floodCosts.TryGetValue(neighbor, out float cost)) { continue; }
+        foreach (Unit player in playerUnits) {
+            foreach (Vector2Int offset in GridDirections.Orthogonal) {
+                Vector2Int neighbor = player.Cell + offset;
+                if (!_floodCosts.TryGetValue(neighbor, out int cost)) { continue; }
                 if (cost < bestCost) {
                     bestCost = cost;
                     bestAdjacentCell = neighbor;
@@ -87,18 +78,15 @@ public sealed class EnemyBrain : MonoBehaviour
         return bestUnit;
     }
 
-    private void TruncateToMovement(List<Vector2Int> fullPath, int movement, List<Vector2Int> result) {
-        result.Clear();
-        float cumulativeCost = 0f;
-        for (int stepIndex = 0; stepIndex < fullPath.Count; stepIndex++) {
-            float stepCost = _grid.MovementCost(fullPath[stepIndex]);
+    private List<Vector2Int> TruncateToMovement(List<Vector2Int> fullPath, int movement) {
+        List<Vector2Int> result = new List<Vector2Int>();
+        int cumulativeCost = 0;
+        foreach (Vector2Int step in fullPath) {
+            int stepCost = _grid.MovementCost(step);
             if (cumulativeCost + stepCost > movement) { break; }
             cumulativeCost += stepCost;
-            result.Add(fullPath[stepIndex]);
+            result.Add(step);
         }
-    }
-
-    private static bool IsAdjacent(Vector2Int cellA, Vector2Int cellB) {
-        return Mathf.Abs(cellA.x - cellB.x) + Mathf.Abs(cellA.y - cellB.y) == 1;
+        return result;
     }
 }

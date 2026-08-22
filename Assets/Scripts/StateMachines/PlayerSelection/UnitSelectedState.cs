@@ -12,7 +12,7 @@ public sealed class UnitSelectedState : ISelectionState
     private static readonly List<Vector2Int> EmptyPath = new List<Vector2Int>();
 
     private readonly Unit _unit;
-    private readonly Dictionary<Vector2Int, float> _rangeCosts = new Dictionary<Vector2Int, float>();
+    private readonly Dictionary<Vector2Int, int> _rangeCosts = new Dictionary<Vector2Int, int>();
     private readonly List<Vector2Int> _previewPath = new List<Vector2Int>();
 
     public UnitSelectedState(Unit unit) {
@@ -20,9 +20,8 @@ public sealed class UnitSelectedState : ISelectionState
     }
 
     public void Enter(SelectionStateMachine machine) {
-        bool IsBlocked(Vector2Int cell) => machine.UnitRegistry.GetUnitAt(cell) != null;
-        float movementBudget = _unit.HasMoved ? 0f : _unit.Stats.Movement;
-        machine.Grid.Pathfinder.FloodCosts(_unit.Cell, movementBudget, machine.Grid, IsBlocked, _rangeCosts);
+        int movementBudget = _unit.HasMoved ? 0 : _unit.Stats.Movement;
+        machine.Grid.Pathfinder.FloodCosts(_unit.Cell, movementBudget, machine.Grid, machine.UnitRegistry.IsOccupied, _rangeCosts);
 
         machine.Highlighter.Clear();
         machine.Highlighter.SetRange(_rangeCosts.Keys);
@@ -47,9 +46,8 @@ public sealed class UnitSelectedState : ISelectionState
 
         if (!_rangeCosts.ContainsKey(cell)) { return; }
 
-        bool IsBlocked(Vector2Int c) => machine.UnitRegistry.GetUnitAt(c) != null;
         List<Vector2Int> path = new List<Vector2Int>();
-        if (!machine.Grid.Pathfinder.TryFindPath(_unit.Cell, cell, machine.Grid, IsBlocked, path)) { return; }
+        if (!machine.Grid.Pathfinder.TryFindPath(_unit.Cell, cell, machine.Grid, machine.UnitRegistry.IsOccupied, path)) { return; }
 
         machine.ChangeState(new AwaitingConfirmState(_unit, new MoveCommand(_unit, path)));
     }
@@ -66,8 +64,7 @@ public sealed class UnitSelectedState : ISelectionState
             return;
         }
 
-        bool IsBlocked(Vector2Int c) => machine.UnitRegistry.GetUnitAt(c) != null;
-        machine.Grid.Pathfinder.TryFindPath(_unit.Cell, cell.Value, machine.Grid, IsBlocked, _previewPath);
+        machine.Grid.Pathfinder.TryFindPath(_unit.Cell, cell.Value, machine.Grid, machine.UnitRegistry.IsOccupied, _previewPath);
         machine.Highlighter.SetPath(_previewPath);
     }
 }

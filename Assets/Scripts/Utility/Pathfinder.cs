@@ -8,39 +8,30 @@ using UnityEngine;
 /// are the same weighted-graph search; A* is Dijkstra with a goal and an
 /// admissible heuristic (Manhattan distance, valid because the cheapest
 /// terrain costs 1 per step), so one internal routine serves both public
-/// methods instead of duplicating the search loop.
-///
-/// Buffers are sized once at construction and cleared (not reallocated) per
-/// query, so a query allocates nothing on the heap after construction —
-/// required by performance.md for pathfinding.
+/// methods instead of duplicating the search loop. Buffers are sized once at
+/// construction and cleared, not reallocated, per query.
 /// </summary>
 public sealed class Pathfinder
 {
     private readonly int _width;
     private readonly int _height;
 
-    private readonly float[,] _gScore;
+    private readonly int[,] _gScore;
     private readonly Vector2Int[,] _cameFrom;
     private readonly bool[,] _hasCameFrom;
     private readonly bool[,] _closed;
     private MinHeap _openHeap;
 
-    private static readonly Vector2Int[] NeighborOffsets = new Vector2Int[]
-    {
-        new Vector2Int(1, 0), new Vector2Int(-1, 0),
-        new Vector2Int(0, 1), new Vector2Int(0, -1),
-    };
-
     public Pathfinder(int width, int height) {
         _width = width;
         _height = height;
-        _gScore = new float[width, height];
+        _gScore = new int[width, height];
         _cameFrom = new Vector2Int[width, height];
         _hasCameFrom = new bool[width, height];
         _closed = new bool[width, height];
-        // why: worst case every cell gets pushed more than once (lazy
-        // deletion instead of decrease-key); *4 is generous headroom for a
-        // 10x10 board and still a trivial fixed allocation at construction.
+        // Worst case every cell is pushed more than once (lazy deletion
+        // instead of decrease-key); *4 is generous headroom for a 10x10
+        // board and still a trivial fixed allocation at construction.
         _openHeap = new MinHeap(width * height * 4);
     }
 
@@ -52,7 +43,7 @@ public sealed class Pathfinder
     /// </summary>
     public bool TryFindPath(Vector2Int start, Vector2Int goal, ITerrainCostSource terrain, Func<Vector2Int, bool> isBlocked, List<Vector2Int> result) {
         result.Clear();
-        RunSearch(start, goal, terrain, isBlocked, float.MaxValue);
+        RunSearch(start, goal, terrain, isBlocked, int.MaxValue);
 
         if (!_hasCameFrom[goal.x, goal.y] && goal != start) {
             return false;
@@ -70,9 +61,9 @@ public sealed class Pathfinder
     /// <summary>
     /// Floods every cell reachable from `start` within `movementBudget`,
     /// writing cell -> accumulated cost into `result` (start included at
-    /// cost 0). Pass `float.MaxValue` for an uncapped flood.
+    /// cost 0). Pass `int.MaxValue` for an uncapped flood.
     /// </summary>
-    public void FloodCosts(Vector2Int start, float movementBudget, ITerrainCostSource terrain, Func<Vector2Int, bool> isBlocked, Dictionary<Vector2Int, float> result) {
+    public void FloodCosts(Vector2Int start, int movementBudget, ITerrainCostSource terrain, Func<Vector2Int, bool> isBlocked, Dictionary<Vector2Int, int> result) {
         result.Clear();
         RunSearch(start, null, terrain, isBlocked, movementBudget);
 
@@ -90,18 +81,18 @@ public sealed class Pathfinder
     /// `budget`; a supplied `goal` adds the Manhattan heuristic and stops
     /// early once the goal is popped from the open set.
     /// </summary>
-    private void RunSearch(Vector2Int start, Vector2Int? goal, ITerrainCostSource terrain, Func<Vector2Int, bool> isBlocked, float budget) {
+    private void RunSearch(Vector2Int start, Vector2Int? goal, ITerrainCostSource terrain, Func<Vector2Int, bool> isBlocked, int budget) {
         for (int cellX = 0; cellX < _width; cellX++) {
             for (int cellY = 0; cellY < _height; cellY++) {
-                _gScore[cellX, cellY] = float.MaxValue;
+                _gScore[cellX, cellY] = int.MaxValue;
                 _hasCameFrom[cellX, cellY] = false;
                 _closed[cellX, cellY] = false;
             }
         }
         _openHeap.Clear();
 
-        _gScore[start.x, start.y] = 0f;
-        _openHeap.Push(start, goal.HasValue ? Heuristic(start, goal.Value) : 0f);
+        _gScore[start.x, start.y] = 0;
+        _openHeap.Push(start, goal.HasValue ? Heuristic(start, goal.Value) : 0);
 
         while (_openHeap.Count > 0) {
             Vector2Int current = _openHeap.Pop();
@@ -111,26 +102,26 @@ public sealed class Pathfinder
             if (goal.HasValue && current == goal.Value) { break; }
             if (_gScore[current.x, current.y] > budget) { continue; }
 
-            for (int offsetIndex = 0; offsetIndex < NeighborOffsets.Length; offsetIndex++) {
-                Vector2Int neighbor = current + NeighborOffsets[offsetIndex];
+            foreach (Vector2Int offset in GridDirections.Orthogonal) {
+                Vector2Int neighbor = current + offset;
                 if (!terrain.Contains(neighbor)) { continue; }
                 if (_closed[neighbor.x, neighbor.y]) { continue; }
                 if (isBlocked(neighbor)) { continue; }
 
-                float tentativeG = _gScore[current.x, current.y] + terrain.MovementCost(neighbor);
+                int tentativeG = _gScore[current.x, current.y] + terrain.MovementCost(neighbor);
                 if (tentativeG >= _gScore[neighbor.x, neighbor.y] || tentativeG > budget) { continue; }
 
                 _gScore[neighbor.x, neighbor.y] = tentativeG;
                 _cameFrom[neighbor.x, neighbor.y] = current;
                 _hasCameFrom[neighbor.x, neighbor.y] = true;
 
-                float priority = tentativeG + (goal.HasValue ? Heuristic(neighbor, goal.Value) : 0f);
+                int priority = tentativeG + (goal.HasValue ? Heuristic(neighbor, goal.Value) : 0);
                 _openHeap.Push(neighbor, priority);
             }
         }
     }
 
-    private static float Heuristic(Vector2Int cellA, Vector2Int cellB) {
+    private static int Heuristic(Vector2Int cellA, Vector2Int cellB) {
         return Mathf.Abs(cellA.x - cellB.x) + Mathf.Abs(cellA.y - cellB.y);
     }
 
@@ -144,14 +135,14 @@ public sealed class Pathfinder
     private struct MinHeap
     {
         private readonly Vector2Int[] _cells;
-        private readonly float[] _priorities;
+        private readonly int[] _priorities;
         private int _count;
 
         public int Count => _count;
 
         public MinHeap(int capacity) {
             _cells = new Vector2Int[capacity];
-            _priorities = new float[capacity];
+            _priorities = new int[capacity];
             _count = 0;
         }
 
@@ -159,7 +150,7 @@ public sealed class Pathfinder
             _count = 0;
         }
 
-        public void Push(Vector2Int cell, float priority) {
+        public void Push(Vector2Int cell, int priority) {
             int index = _count;
             _cells[index] = cell;
             _priorities[index] = priority;
@@ -201,7 +192,7 @@ public sealed class Pathfinder
             _cells[indexA] = _cells[indexB];
             _cells[indexB] = cellTemp;
 
-            float priorityTemp = _priorities[indexA];
+            int priorityTemp = _priorities[indexA];
             _priorities[indexA] = _priorities[indexB];
             _priorities[indexB] = priorityTemp;
         }

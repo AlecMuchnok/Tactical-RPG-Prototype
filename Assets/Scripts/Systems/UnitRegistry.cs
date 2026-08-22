@@ -6,7 +6,6 @@ using UnityEngine;
 /// move, so a dictionary would need re-keying on every step. Cheap at this
 /// unit count to scan the list instead.
 /// </summary>
-[DefaultExecutionOrder(-100)]
 public sealed class UnitRegistry : MonoBehaviour
 {
     private readonly List<Unit> _units = new List<Unit>();
@@ -28,17 +27,20 @@ public sealed class UnitRegistry : MonoBehaviour
     }
 
     public Unit GetUnitAt(Vector2Int cell) {
-        for (int unitIndex = 0; unitIndex < _units.Count; unitIndex++) {
-            if (_units[unitIndex].Cell == cell) { return _units[unitIndex]; }
+        foreach (Unit unit in _units) {
+            if (unit.Cell == cell) { return unit; }
         }
         return null;
     }
 
-    /// <summary>Writes every unit on `team` into `result` (cleared first) — caller-supplied buffer, no per-call allocation.</summary>
-    public void UnitsOnTeam(Team team, List<Unit> result) {
-        result.Clear();
-        for (int unitIndex = 0; unitIndex < _units.Count; unitIndex++) {
-            if (_units[unitIndex].Team == team) { result.Add(_units[unitIndex]); }
+    public bool IsOccupied(Vector2Int cell) => GetUnitAt(cell) != null;
+
+    /// <summary>Every unit on `team`.</summary>
+    public List<Unit> UnitsOnTeam(Team team) {
+        List<Unit> result = new List<Unit>();
+        foreach (Unit unit in _units) {
+            if (unit.Team == team) { result.Add(unit); }
         }
+        return result;
     }
 }

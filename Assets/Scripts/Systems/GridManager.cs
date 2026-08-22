@@ -3,14 +3,11 @@ using UnityEngine.Tilemaps;
 
 /// <summary>
 /// Wraps the scene's Grid/Terrain Tilemap: cell &lt;-&gt; world conversion,
-/// bounds, and terrain movement cost. Terrain is read from the Tilemap once
-/// into a plain array in Awake (`_terrainCache`) so Pathfinder's inner loop
-/// never calls into the Tilemap API. Also owns the single shared Pathfinder
-/// instance — one 10x10 board only needs one, and every system that paths
-/// (player selection, enemy AI) fetches it from here instead of allocating
-/// its own buffers.
+/// bounds, and terrain movement cost. Terrain is read into a plain array once
+/// in Awake so Pathfinder's inner loop never calls into the Tilemap API.
+/// Also owns the single shared Pathfinder instance that every pathing system
+/// (player selection, enemy AI) fetches from here.
 /// </summary>
-[DefaultExecutionOrder(-100)]
 public sealed class GridManager : MonoBehaviour, ITerrainCostSource
 {
     [SerializeField] private Grid _grid;
@@ -37,9 +34,9 @@ public sealed class GridManager : MonoBehaviour, ITerrainCostSource
         return cell.x >= 0 && cell.x < _width && cell.y >= 0 && cell.y < _height;
     }
 
-    public float MovementCost(Vector2Int cell) {
+    public int MovementCost(Vector2Int cell) {
         TerrainType terrain = _terrainCache[cell.x, cell.y];
-        return terrain != null ? terrain.MovementCost : 1f;
+        return terrain != null ? terrain.MovementCost : 1;
     }
 
     public Vector3 CellToWorld(Vector2Int cell) {

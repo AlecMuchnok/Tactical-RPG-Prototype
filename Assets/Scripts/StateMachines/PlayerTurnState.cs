@@ -3,16 +3,14 @@ using System.Collections.Generic;
 /// <summary>Resets every player unit's turn state, then drives the player-selection machine until every unit is done.</summary>
 public sealed class PlayerTurnState : IBattlePhase
 {
-    private readonly List<Unit> _scratchUnits = new List<Unit>();
-
     private SelectionStateMachine _selectionMachine;
     private BattleInputView _inputView;
 
     public void Enter(BattleStateMachine machine) {
         UnitRegistry unitRegistry = ServiceLocator.Get<UnitRegistry>();
-        unitRegistry.UnitsOnTeam(Team.Player, _scratchUnits);
-        for (int unitIndex = 0; unitIndex < _scratchUnits.Count; unitIndex++) {
-            _scratchUnits[unitIndex].ResetForTurn();
+        List<Unit> playerUnits = unitRegistry.UnitsOnTeam(Team.Player);
+        foreach (Unit unit in playerUnits) {
+            unit.ResetForTurn();
         }
 
         GridManager grid = ServiceLocator.Get<GridManager>();

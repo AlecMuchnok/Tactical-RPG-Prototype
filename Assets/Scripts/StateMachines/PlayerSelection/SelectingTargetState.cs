@@ -20,15 +20,15 @@ public sealed class SelectingTargetState : ISelectionState
     }
 
     public void Enter(SelectionStateMachine machine) {
-        // why: no path here either — the unit has already arrived at the
-        // destination, so only the targets it can actually strike are worth
-        // drawing.
+        // No path shown — the unit has already arrived, so only the targets
+        // it can strike are worth drawing.
         machine.Highlighter.Clear();
 
-        machine.Combat.FindAdjacentOpponents(_unit.Cell, _unit.Team, _opponents);
+        _opponents.Clear();
+        _opponents.AddRange(machine.Combat.FindAdjacentOpponents(_unit.Cell, _unit.Team));
         _targetCells.Clear();
-        for (int opponentIndex = 0; opponentIndex < _opponents.Count; opponentIndex++) {
-            _targetCells.Add(_opponents[opponentIndex].Cell);
+        foreach (Unit opponent in _opponents) {
+            _targetCells.Add(opponent.Cell);
         }
         machine.Highlighter.SetTargets(_targetCells);
         machine.Highlighter.SetHover(machine.Input.HoveredCell);
@@ -54,8 +54,8 @@ public sealed class SelectingTargetState : ISelectionState
     }
 
     private Unit FindOpponentAt(Vector2Int cell) {
-        for (int opponentIndex = 0; opponentIndex < _opponents.Count; opponentIndex++) {
-            if (_opponents[opponentIndex].Cell == cell) { return _opponents[opponentIndex]; }
+        foreach (Unit opponent in _opponents) {
+            if (opponent.Cell == cell) { return opponent; }
         }
         return null;
     }

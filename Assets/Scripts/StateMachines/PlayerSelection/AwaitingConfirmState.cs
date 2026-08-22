@@ -12,7 +12,6 @@ public sealed class AwaitingConfirmState : ISelectionState
 {
     private readonly Unit _unit;
     private readonly MoveCommand _moveCommand;
-    private readonly List<Unit> _scratchOpponents = new List<Unit>();
     private readonly List<BattleAction> _actions = new List<BattleAction>();
 
     private bool _isBusy;
@@ -23,9 +22,9 @@ public sealed class AwaitingConfirmState : ISelectionState
     }
 
     public void Enter(SelectionStateMachine machine) {
-        // why: fire-and-forget from a synchronous Enter() — the pre-move
-        // glide (if any) must finish before the menu can appear, and
-        // OnCancelled's _isBusy guard prevents a right-click from racing it.
+        // Fire-and-forget from a synchronous Enter() — the pre-move glide
+        // (if any) must finish before the menu can appear, and OnCancelled's
+        // _isBusy guard prevents a right-click from racing it.
         _ = EnterAsync(machine);
     }
 
@@ -38,7 +37,7 @@ public sealed class AwaitingConfirmState : ISelectionState
             _isBusy = false;
         }
 
-        // why: the board stays completely clear while the menu is open — the
+        // The board stays completely clear while the menu is open — the
         // unit is already standing on the destination, so leaving the path
         // painted underneath just reads as leftover UI.
         ShowMenu(machine);
@@ -71,8 +70,8 @@ public sealed class AwaitingConfirmState : ISelectionState
         _actions.Clear();
         _actions.Add(BattleAction.Wait);
 
-        machine.Combat.FindAdjacentOpponents(_unit.Cell, _unit.Team, _scratchOpponents);
-        if (!_unit.HasActed && _scratchOpponents.Count > 0) {
+        List<Unit> opponents = machine.Combat.FindAdjacentOpponents(_unit.Cell, _unit.Team);
+        if (!_unit.HasActed && opponents.Count > 0) {
             _actions.Add(BattleAction.Attack);
         }
 

@@ -19,7 +19,6 @@ public sealed class SelectionStateMachine
     public BattleLocks Locks { get; }
 
     private readonly Action _onTurnComplete;
-    private readonly List<Unit> _scratchUnits = new List<Unit>();
     private ISelectionState _current;
 
     public SelectionStateMachine(GridManager grid, UnitRegistry unitRegistry, TileHighlighter highlighter, ActionMenuPresenter actionMenu, CombatSystem combat, BattleInputView inputView, BattleLocks locks, Action onTurnComplete) {
@@ -44,9 +43,9 @@ public sealed class SelectionStateMachine
     public void HandleCancelled() => _current?.OnCancelled(this);
 
     public bool AllPlayerUnitsDone() {
-        UnitRegistry.UnitsOnTeam(Team.Player, _scratchUnits);
-        for (int unitIndex = 0; unitIndex < _scratchUnits.Count; unitIndex++) {
-            if (!_scratchUnits[unitIndex].IsDone) { return false; }
+        List<Unit> playerUnits = UnitRegistry.UnitsOnTeam(Team.Player);
+        foreach (Unit unit in playerUnits) {
+            if (!unit.IsDone) { return false; }
         }
         return true;
     }

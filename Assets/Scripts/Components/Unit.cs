@@ -1,13 +1,7 @@
 using System;
 using UnityEngine;
 
-/// <summary>
-/// Identity, position, and per-turn action state for one unit. Condensed
-/// component design (plan §4): Health and UnitView are the only siblings —
-/// there is no separate Mover/Attacker/TurnActions, since every unit in this
-/// slice has identical capability and splitting two bools and a delegate
-/// call into their own MonoBehaviours bought nothing.
-/// </summary>
+/// <summary>Identity, position, and per-turn action state for one unit.</summary>
 [RequireComponent(typeof(Health))]
 [RequireComponent(typeof(UnitView))]
 public sealed class Unit : MonoBehaviour
@@ -23,11 +17,9 @@ public sealed class Unit : MonoBehaviour
     public Vector2Int Cell { get; private set; }
     public Health Health { get; private set; }
     public UnitView View { get; private set; }
-    /// <summary>Null on player units — only the enemy prefab carries this component.</summary>
-    public EnemyBrain Brain { get; private set; }
     public bool HasMoved { get; private set; }
     public bool HasActed { get; private set; }
-    // why: acting (Wait or Attack) ends the unit's turn outright — HasMoved no
+    // Acting (Wait or Attack) ends the unit's turn outright — HasMoved no
     // longer factors in. It still exists to stop a second move and to
     // collapse the move range to 0 once used (UnitSelectedState.Enter).
     public bool IsDone => HasActed;
@@ -37,13 +29,12 @@ public sealed class Unit : MonoBehaviour
     private void Awake() {
         Health = GetComponent<Health>();
         View = GetComponent<UnitView>();
-        Brain = GetComponent<EnemyBrain>();
         Health.Initialize(_stats.MaxHealth);
         Health.Died += OnDied;
-        // why: set directly (not via SetCell) so it's ready before any
-        // Start() runs — UnitView.Start reads Cell to place itself, and
-        // Start-phase ordering between sibling components is undefined, but
-        // the whole scene's Awake phase always completes before any Start.
+        // Set directly (not via SetCell) so it's ready before any Start()
+        // runs — UnitView.Start reads Cell to place itself, and Start-phase
+        // ordering between sibling components is undefined, but the whole
+        // scene's Awake phase always completes before any Start.
         Cell = _startCell;
     }
 
