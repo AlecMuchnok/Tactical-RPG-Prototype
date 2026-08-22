@@ -90,9 +90,17 @@ public sealed class PlayerController : MonoBehaviour
 ## Control Flow
 
 - Braces always, even for single-line `if`/`for`/`while`
-- `for` over `foreach` in hot paths (Update, FixedUpdate)
+- **`foreach` is the default.** Reach for indexed `for` only in a genuine hot path (`Update`, `FixedUpdate`, `LateUpdate`) or when the loop body needs the index itself.
 - No abbreviated loop variables — `for (int enemyIndex = 0; ...)` not `for (int i = 0; ...)`
 - No magic strings — use `nameof()`, `Animator.StringToHash()`, `Shader.PropertyToID()`
+
+## Comments
+
+- No `why:` label.
+- Never reference rules files.
+- Never reference a plan file or planning step ("per the plan", "the plan's §4", "as planned")
+- Never name a class, split, or design that doesn't exist in the current codebase (an earlier design option, a since-removed type). Describe what the code is, not what it used to be or almost was.
+- Class/type summary comments are one to three sentences: what the thing is, not a design-rationale essay.
 
 ## Other
 

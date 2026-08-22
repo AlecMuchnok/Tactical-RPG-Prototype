@@ -20,12 +20,16 @@ If the working tree isn't clean (uncommitted changes present), stop and ask rath
 Never commit implementation work directly on `main`. Before writing code for a new feature or fix:
 
 ```bash
-git checkout -b <type>/<short-description>
+git checkout -b <short-description>
 ```
 
-Suggested prefixes: `feature/`, `fix/`, `chore/`. Branch names should be short and kebab-case (e.g. `feature/turn-order-system`, `fix/grid-hover-glitch`).
+No `feature/`/`fix/`/`chore/` prefix — branch names are short and kebab-case (e.g. `turn-order-system`, `grid-hover-glitch`).
 
-**Enforced, not just documented:** `.claude/hooks/require-feature-branch.sh` blocks `git commit` while `main` (or `master`) is checked out. First attempt is denied with instructions to create a branch; there is no second-attempt bypass the way other gates work here, because the fix (`git checkout -b ...`) is a single command with no judgment call attached. Escape hatch: `DISABLE_HOOK_REQUIRE_FEATURE_BRANCH=1` if you genuinely need to commit on `main` (e.g. a one-line doc fix you intend to push through a PR from a throwaway branch anyway — even then, prefer just making the branch).
+**Enforced, not just documented:** `.claude/hooks/guard-destructive-commands.sh` blocks `git commit` while `main` (or `master`) is checked out. Escape hatch: `DISABLE_HOOK_GUARD_DESTRUCTIVE_COMMANDS=1` if you genuinely need to commit on `main` — prefer just making the branch instead.
+
+## 3. Commit message length
+
+Header under 50 characters. Body after the header under 200 characters.
 
 ## What this does NOT cover
 
