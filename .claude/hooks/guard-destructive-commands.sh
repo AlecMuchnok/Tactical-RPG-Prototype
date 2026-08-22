@@ -85,9 +85,9 @@ if grep -qE 'git[[:space:]]+commit(\s|$)' <<<"$CMD"; then
         hooklib::guard_deny "GUARD_DESTRUCTIVE_COMMANDS" \
 "DENIED — committing directly on '$BRANCH' (git-workflow.md: main is protected).
 Create a branch first:
-  git checkout -b <type>/<short-description>
-(prefixes: feature/, fix/, chore/). Escape hatch if truly needed:
-DISABLE_HOOK_GUARD_DESTRUCTIVE_COMMANDS=1 — prefer the branch."
+  git checkout -b <short-description>
+Escape hatch if truly needed: DISABLE_HOOK_GUARD_DESTRUCTIVE_COMMANDS=1 —
+prefer the branch."
     fi
 fi
 

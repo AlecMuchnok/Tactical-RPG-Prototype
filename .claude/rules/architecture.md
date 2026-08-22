@@ -391,9 +391,8 @@ public sealed class GridManager : MonoBehaviour
 **Rules:**
 - Only genuinely shared, scene-wide systems register (`GridManager`, `TurnManager`, `CombatSystem`). Per-unit components (`Health`, `Movement`) are never registered — they're reached via `GetComponent` by their own GameObject's siblings, or via an event channel by anything else.
 - **The known gotcha: Unity doesn't guarantee `Awake` order across objects.** A consumer calling `ServiceLocator.Get<T>()` in its own `Awake` can run before the service's `Awake` has registered it. Two ways to dodge this:
-  1. Give the service `[DefaultExecutionOrder(-100)]` (or lower) so it registers first, **and** fetch it in `Start` (which always runs after every `Awake`), not `Awake`.
+  1. Fetch it in `Start` (which always runs after every `Awake`), not `Awake`.
   2. If a component genuinely needs the service inside its own `Awake`, that's a sign it should be a sibling component (`GetComponent`) instead of a service — reach for the locator only for things that are truly scene-wide.
-- **`[DefaultExecutionOrder(-100)]` is not default boilerplate for every service.** Add it only when a real consumer actually fetches that service from its own `Awake`. If every consumer fetches in `Start` or later — the normal case, since `Start` already runs after every object's `Awake` regardless of execution order — the attribute protects against nothing and shouldn't be there. Don't add it "to match the other services" or as defense against a scenario that isn't in the codebase yet.
 - Still no `static Instance` per-class singletons anywhere else — the locator is the one explicit registry, not a pattern to reinvent per-system.
 - Systems themselves stay MonoBehaviours (not plain C#) — one construction model (`GameObject` + `MonoBehaviour`) is simpler to teach than two, and it matches how components already work.
 
