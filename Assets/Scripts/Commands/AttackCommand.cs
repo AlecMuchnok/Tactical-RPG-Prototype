@@ -5,10 +5,12 @@ public sealed class AttackCommand : ICommand
 {
     private readonly Unit _attacker;
     private readonly Unit _defender;
+    private readonly Weapon _weapon;
 
-    public AttackCommand(Unit attacker, Unit defender) {
+    public AttackCommand(Unit attacker, Unit defender, Weapon weapon) {
         _attacker = attacker;
         _defender = defender;
+        _weapon = weapon;
     }
 
     public bool CanExecute() {
@@ -21,7 +23,7 @@ public sealed class AttackCommand : ICommand
     // Awaitable-returning shape for callers to sequence uniformly, rather
     // than special-casing this one command.
     public async Awaitable Execute() {
-        ServiceLocator.Get<CombatSystem>().ResolveAttack(_attacker, _defender);
+        ServiceLocator.Get<CombatSystem>().ResolveAttack(_attacker, _defender, _weapon);
         _attacker.MarkActed();
     }
 

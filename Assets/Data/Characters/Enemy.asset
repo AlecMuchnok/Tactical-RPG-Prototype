@@ -9,13 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 32740cb4fe05f2046b013db2f3bd849f, type: 3}
+  m_Script: {fileID: 11500000, guid: d167910c34187bb43a7b4797bc5b9e1c, type: 3}
   m_Name: Enemy
-  m_EditorClassIdentifier: Assembly-CSharp::UnitStats
+  m_EditorClassIdentifier: Assembly-CSharp::Character
   _displayName: Enemy
   _sprite: {fileID: 21300000, guid: 028421c53b1ac8b4e894d41a3d2ace13, type: 3}
-  _maxHealth: 180
-  _movement: 3
-  _power: 44
-  _dexterity: 16
-  _speed: 13
+  _maxHealth: 18
+  _power: 4
+  _dexterity: 2
+  _speed: 2
+  _defense: 0
+  _magicResistance: 0

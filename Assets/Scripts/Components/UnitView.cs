@@ -33,7 +33,7 @@ public sealed class UnitView : MonoBehaviour
 
     private void Start() {
         _grid = ServiceLocator.Get<GridManager>();
-        _renderer.sprite = _unit.Stats.Sprite;
+        _renderer.sprite = _unit.Character.Sprite;
         _renderer.color = _normalColor;
         transform.position = _grid.CellToWorld(_unit.Cell);
 

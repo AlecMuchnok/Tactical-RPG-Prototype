@@ -2,9 +2,9 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// One unit's hit points. `Max` is set externally by Unit from UnitStats
+/// One unit's hit points. `Max` is set externally by Unit from Character
 /// (single source of truth for stats) rather than serialized here, so a
-/// prefab's Health can't drift out of sync with its assigned UnitStats asset.
+/// prefab's Health can't drift out of sync with its assigned Character asset.
 /// </summary>
 public sealed class Health : MonoBehaviour
 {
