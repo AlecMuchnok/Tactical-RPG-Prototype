@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Designer-tunable class data: which weapon types a unit of this class can equip, its movement range, and its armor type.</summary>
+/// <summary>Which weapon types a unit of this class can equip, its movement range, and its armor type.</summary>
 [CreateAssetMenu(menuName = "Game/Class")]
 public sealed class Class : ScriptableObject
 {

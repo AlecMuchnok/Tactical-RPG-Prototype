@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// <summary>Designer-tunable weapon data: base accuracy and its stat modifiers for hit chance and damage.</summary>
+/// <summary>Base accuracy and its stat modifiers for hit chance and damage.</summary>
 [CreateAssetMenu(menuName = "Game/Weapon")]
 public sealed class Weapon : ScriptableObject
 {

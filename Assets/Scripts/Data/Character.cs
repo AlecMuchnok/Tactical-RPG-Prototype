@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// <summary>Designer-tunable base stats for a character (Hero, Enemy, ...), independent of class.</summary>
+/// <summary>Base stats for a character, independent of class.</summary>
 [CreateAssetMenu(menuName = "Game/Character")]
 public sealed class Character : ScriptableObject
 {

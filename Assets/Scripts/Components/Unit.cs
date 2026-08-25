@@ -2,9 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// serialization:ignore — _stats (UnitStats) is replaced by _class/_character/_weapons
-// below, not renamed; UnitStats is deleted and its data has no equivalent field in the
-// new set to carry forward, so there is nothing for FormerlySerializedAs to map to.
 /// <summary>Identity, position, and per-turn action state for one unit.</summary>
 [RequireComponent(typeof(Health))]
 [RequireComponent(typeof(UnitView))]
