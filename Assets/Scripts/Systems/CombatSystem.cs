@@ -6,7 +6,6 @@ public sealed class CombatSystem : MonoBehaviour
 {
     [SerializeField] private UnitEventChannel _unitDefeatedChannel;
     [SerializeField] private AttackOutcomeEventChannel _attackResolvedChannel;
-    [SerializeField, Range(0f, 1f)] private float _damageVariance = 0.1f;
 
     private UnitRegistry _unitRegistry;
 
@@ -38,12 +37,12 @@ public sealed class CombatSystem : MonoBehaviour
         return results;
     }
 
-    public void ResolveAttack(Unit attacker, Unit defender) {
-        float finalHitChance = CombatMath.AttackChance(attacker.Stats, defender.Stats);
+    public void ResolveAttack(Unit attacker, Unit defender, Weapon weapon) {
+        float finalHitChance = CombatMath.AttackChance(attacker.Character, weapon, defender.Character, defender.Class.ArmorType);
 
         float roll = Random.Range(0f, 100f);
         bool didHit = roll <= finalHitChance;
-        int damage = didHit ? CombatMath.RollDamage(attacker.Stats.Power, _damageVariance) : 0;
+        int damage = didHit ? CombatMath.CalculateDamage(attacker.Character, weapon) : 0;
 
         // Raised before ApplyDamage — a killing blow destroys the defender's
         // GameObject synchronously via Health.Died, so anything reading the

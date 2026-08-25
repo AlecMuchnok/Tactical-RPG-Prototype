@@ -14,6 +14,7 @@ public sealed class SelectionStateMachine
     public UnitRegistry UnitRegistry { get; }
     public TileHighlighter Highlighter { get; }
     public ActionMenuPresenter ActionMenu { get; }
+    public WeaponMenuPresenter WeaponMenu { get; }
     public CombatSystem Combat { get; }
     public BattleInputView Input { get; }
     public BattleLocks Locks { get; }
@@ -21,11 +22,12 @@ public sealed class SelectionStateMachine
     private readonly Action _onTurnComplete;
     private ISelectionState _current;
 
-    public SelectionStateMachine(GridManager grid, UnitRegistry unitRegistry, TileHighlighter highlighter, ActionMenuPresenter actionMenu, CombatSystem combat, BattleInputView inputView, BattleLocks locks, Action onTurnComplete) {
+    public SelectionStateMachine(GridManager grid, UnitRegistry unitRegistry, TileHighlighter highlighter, ActionMenuPresenter actionMenu, WeaponMenuPresenter weaponMenu, CombatSystem combat, BattleInputView inputView, BattleLocks locks, Action onTurnComplete) {
         Grid = grid;
         UnitRegistry = unitRegistry;
         Highlighter = highlighter;
         ActionMenu = actionMenu;
+        WeaponMenu = weaponMenu;
         Combat = combat;
         Input = inputView;
         Locks = locks;

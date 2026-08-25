@@ -20,7 +20,7 @@ public sealed class UnitSelectedState : ISelectionState
     }
 
     public void Enter(SelectionStateMachine machine) {
-        int movementBudget = _unit.HasMoved ? 0 : _unit.Stats.Movement;
+        int movementBudget = _unit.HasMoved ? 0 : _unit.Class.Movement;
         machine.Grid.Pathfinder.FloodCosts(_unit.Cell, movementBudget, machine.Grid, machine.UnitRegistry.IsOccupied, _rangeCosts);
 
         machine.Highlighter.Clear();

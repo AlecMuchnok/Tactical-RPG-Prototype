@@ -45,8 +45,7 @@ public sealed class SelectingTargetState : ISelectionState
         Unit target = FindOpponentAt(cell);
         if (target == null) { return; }
 
-        List<ICommand> commands = new List<ICommand> { new AttackCommand(_unit, target) };
-        machine.ChangeState(new ExecutingActionState(commands));
+        machine.ChangeState(new SelectingWeaponState(_unit, target, _moveCommand));
     }
 
     public void OnCancelled(SelectionStateMachine machine) {

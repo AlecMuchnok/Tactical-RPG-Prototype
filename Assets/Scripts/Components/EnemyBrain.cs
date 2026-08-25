@@ -41,7 +41,7 @@ public sealed class EnemyBrain : MonoBehaviour
         if (_unit.Cell != bestAdjacentCell) {
             List<Vector2Int> fullPath = new List<Vector2Int>();
             _grid.Pathfinder.TryFindPath(_unit.Cell, bestAdjacentCell, _grid, _unitRegistry.IsOccupied, fullPath);
-            List<Vector2Int> truncatedPath = TruncateToMovement(fullPath, _unit.Stats.Movement);
+            List<Vector2Int> truncatedPath = TruncateToMovement(fullPath, _unit.Class.Movement);
             if (truncatedPath.Count > 0) {
                 result.Add(new MoveCommand(_unit, truncatedPath));
                 finalCell = truncatedPath[truncatedPath.Count - 1];
@@ -50,12 +50,39 @@ public sealed class EnemyBrain : MonoBehaviour
 
         // finalCell and targetUnit.Cell are orthogonally adjacent (Manhattan distance 1)
         if (Mathf.Abs(finalCell.x - targetUnit.Cell.x) + Mathf.Abs(finalCell.y - targetUnit.Cell.y) == 1) {
-            result.Add(new AttackCommand(_unit, targetUnit));
+            Weapon weapon = SelectBestWeapon(_unit, targetUnit);
+            result.Add(new AttackCommand(_unit, targetUnit, weapon));
         } else {
             result.Add(new WaitCommand(_unit));
         }
 
         return result;
+    }
+
+    /// <summary>Prefers the most accurate weapon that guarantees a kill on a hit; otherwise the weapon with the highest expected damage (damage * hit chance).</summary>
+    private Weapon SelectBestWeapon(Unit attacker, Unit defender) {
+        Weapon killWeapon = null;
+        float killWeaponAccuracy = -1f;
+        Weapon bestExpectedWeapon = null;
+        float bestExpectedDamage = -1f;
+
+        foreach (Weapon weapon in attacker.Weapons) {
+            float hitChance = CombatMath.AttackChance(attacker.Character, weapon, defender.Character, defender.Class.ArmorType);
+            int damage = CombatMath.CalculateDamage(attacker.Character, weapon);
+
+            if (damage >= defender.Health.Current && hitChance > killWeaponAccuracy) {
+                killWeapon = weapon;
+                killWeaponAccuracy = hitChance;
+            }
+
+            float expectedDamage = damage * (hitChance / 100f);
+            if (expectedDamage > bestExpectedDamage) {
+                bestExpectedWeapon = weapon;
+                bestExpectedDamage = expectedDamage;
+            }
+        }
+
+        return killWeapon != null ? killWeapon : bestExpectedWeapon;
     }
 
     private Unit FindClosestPlayer(List<Unit> playerUnits, out Vector2Int bestAdjacentCell) {

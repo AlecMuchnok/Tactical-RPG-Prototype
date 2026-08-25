@@ -1,19 +1,27 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
+// serialization:ignore — _stats (UnitStats) is replaced by _class/_character/_weapons
+// below, not renamed; UnitStats is deleted and its data has no equivalent field in the
+// new set to carry forward, so there is nothing for FormerlySerializedAs to map to.
 /// <summary>Identity, position, and per-turn action state for one unit.</summary>
 [RequireComponent(typeof(Health))]
 [RequireComponent(typeof(UnitView))]
 public sealed class Unit : MonoBehaviour
 {
     [SerializeField] private Team _team;
-    [SerializeField] private UnitStats _stats;
+    [SerializeField] private Class _class;
+    [SerializeField] private Character _character;
+    [SerializeField] private List<Weapon> _weapons = new List<Weapon>();
     [SerializeField] private Vector2Int _startCell;
 
     private UnitRegistry _unitRegistry;
 
     public Team Team => _team;
-    public UnitStats Stats => _stats;
+    public Class Class => _class;
+    public Character Character => _character;
+    public IReadOnlyList<Weapon> Weapons => _weapons;
     public Vector2Int Cell { get; private set; }
     public Health Health { get; private set; }
     public UnitView View { get; private set; }
@@ -29,7 +37,7 @@ public sealed class Unit : MonoBehaviour
     private void Awake() {
         Health = GetComponent<Health>();
         View = GetComponent<UnitView>();
-        Health.Initialize(_stats.MaxHealth);
+        Health.Initialize(_character.MaxHealth);
         Health.Died += OnDied;
         // Set directly (not via SetCell) so it's ready before any Start()
         // runs — UnitView.Start reads Cell to place itself, and Start-phase

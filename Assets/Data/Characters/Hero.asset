@@ -9,13 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 32740cb4fe05f2046b013db2f3bd849f, type: 3}
+  m_Script: {fileID: 11500000, guid: d167910c34187bb43a7b4797bc5b9e1c, type: 3}
   m_Name: Hero
-  m_EditorClassIdentifier: Assembly-CSharp::UnitStats
+  m_EditorClassIdentifier: Assembly-CSharp::Character
   _displayName: Hero
   _sprite: {fileID: 21300000, guid: 33d52732bef707f4e94f4551c4a80a1e, type: 3}
-  _maxHealth: 220
-  _movement: 4
-  _power: 52
-  _dexterity: 20
-  _speed: 16
+  _maxHealth: 22
+  _power: 5
+  _dexterity: 3
+  _speed: 3
+  _defense: 0
+  _magicResistance: 0

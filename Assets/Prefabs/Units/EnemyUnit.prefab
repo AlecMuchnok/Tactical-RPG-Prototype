@@ -295,7 +295,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Unit
   _team: 1
-  _stats: {fileID: 11400000, guid: 532c122b2c7f7f74babe6d14bcdd402e, type: 2}
+  _class: {fileID: 11400000, guid: 082b150bf6ecddd4f98b18fbb748f5a0, type: 2}
+  _character: {fileID: 11400000, guid: d45d878cfd1066c4489fbc579dff4db0, type: 2}
+  _weapons:
+  - {fileID: 11400000, guid: bb05c2f4b0c8c03448518243ee981cfc, type: 2}
+  - {fileID: 11400000, guid: 56ec7bb804b67b746a4c697056e3270d, type: 2}
   _startCell: {x: 8, y: 8}
 --- !u!114 &4068340194883403689
 MonoBehaviour:

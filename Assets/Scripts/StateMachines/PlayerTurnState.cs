@@ -16,12 +16,13 @@ public sealed class PlayerTurnState : IBattlePhase
         GridManager grid = ServiceLocator.Get<GridManager>();
         TileHighlighter highlighter = ServiceLocator.Get<TileHighlighter>();
         ActionMenuPresenter actionMenu = ServiceLocator.Get<ActionMenuPresenter>();
+        WeaponMenuPresenter weaponMenu = ServiceLocator.Get<WeaponMenuPresenter>();
         CombatSystem combat = ServiceLocator.Get<CombatSystem>();
         TurnManager turnManager = ServiceLocator.Get<TurnManager>();
         BattleLocks locks = ServiceLocator.Get<BattleLocks>();
         _inputView = ServiceLocator.Get<BattleInputView>();
 
-        _selectionMachine = new SelectionStateMachine(grid, unitRegistry, highlighter, actionMenu, combat, _inputView, locks, turnManager.EndTurn);
+        _selectionMachine = new SelectionStateMachine(grid, unitRegistry, highlighter, actionMenu, weaponMenu, combat, _inputView, locks, turnManager.EndTurn);
         _selectionMachine.ChangeState(new AwaitingSelectionState());
 
         _inputView.CellHovered += _selectionMachine.HandleCellHovered;
